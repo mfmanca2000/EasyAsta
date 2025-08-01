@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User - Utenti dell'applicazione
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          UserRole  @default(PLAYER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relazioni
+  adminLeagues  League[]  @relation("LeagueAdmin")
+  teams         Team[]
+  selections    PlayerSelection[]
+}
+
+// League - Leghe fantacalcio
+model League {
+  id          String      @id @default(cuid())
+  name        String
+  adminId     String
+  credits     Int         @default(500)
+  status      LeagueStatus @default(SETUP)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relazioni
+  admin       User        @relation("LeagueAdmin", fields: [adminId], references: [id])
+  teams       Team[]
+  players     Player[]
+  rounds      AuctionRound[]
+}
+
+// Team - Squadre dei giocatori
+model Team {
+  id              String    @id @default(cuid())
+  name            String
+  userId          String    
+  leagueId        String
+  remainingCredits Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relazioni
+  user            User      @relation(fields: [userId], references: [id])
+  league          League    @relation(fields: [leagueId], references: [id])
+  teamPlayers     TeamPlayer[]
+  
+  @@unique([userId, leagueId])
+}
+
+// Player - Calciatori disponibili
+model Player {
+  id          String      @id @default(cuid())
+  name        String
+  position    Position
+  realTeam    String
+  price       Int
+  leagueId    String
+  isAssigned  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relazioni
+  league      League      @relation(fields: [leagueId], references: [id])
+  teamPlayers TeamPlayer[]
+  selections  PlayerSelection[]
+}
+
+// TeamPlayer - Calciatori assegnati alle squadre
+model TeamPlayer {
+  id          String    @id @default(cuid())
+  teamId      String
+  playerId    String
+  acquiredAt  DateTime  @default(now())
+  
+  // Relazioni
+  team        Team      @relation(fields: [teamId], references: [id])
+  player      Player    @relation(fields: [playerId], references: [id])
+  
+  @@unique([teamId, playerId])
+}
+
+// AuctionRound - Turni d'asta
+model AuctionRound {
+  id          String      @id @default(cuid())
+  leagueId    String
+  position    Position
+  roundNumber Int
+  status      RoundStatus @default(SELECTION)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relazioni
+  league      League      @relation(fields: [leagueId], references: [id])
+  selections  PlayerSelection[]
+}
+
+// PlayerSelection - Selezioni dei giocatori
+model PlayerSelection {
+  id            String    @id @default(cuid())
+  roundId       String
+  userId        String
+  playerId      String
+  randomNumber  Int?
+  isWinner      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  
+  // Relazioni
+  round         AuctionRound @relation(fields: [roundId], references: [id])
+  user          User      @relation(fields: [userId], references: [id])
+  player        Player    @relation(fields: [playerId], references: [id])
+  
+  @@unique([roundId, userId])
+}
+
+// Enums
+enum UserRole {
+  PLAYER
+  ADMIN
+}
+
+enum LeagueStatus {
+  SETUP
+  AUCTION
+  COMPLETED
+}
+
+enum Position {
+  P  // Portiere
+  D  // Difensore
+  C  // Centrocampista
+  A  // Attaccante
+}
+
+enum RoundStatus {
+  SELECTION
+  RESOLUTION
+  COMPLETED
+}

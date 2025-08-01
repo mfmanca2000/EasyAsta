@@ -1,0 +1,410 @@
+# EasyAsta - Applicazione Aste Fantacalcio
+
+## Panoramica Progetto
+
+**Nome**: EasyAsta  
+**Tipo**: Applicazione web per gestione aste fantacalcio  
+**Tecnologie**: Next.js 15, TypeScript, Prisma, PostgreSQL, NextAuth.js, Socket.io  
+**Creato**: 2025-08-01  
+**Stato**: Progettazione iniziale  
+
+### Descrizione
+Applicazione web che permette di gestire aste del fantacalcio con sistema di turni, selezioni simultanee e risoluzione conflitti tramite numeri casuali. Supporta da 4 a 8 squadre per lega, con autenticazione Google e aggiornamenti real-time.
+
+### Funzionalità Principali
+- Creazione leghe fantacalcio (4-8 squadre)
+- Import calciatori da file Excel
+- Sistema aste a turni per ruolo (P/D/C/A)
+- Selezione simultanea con risoluzione conflitti
+- Gestione crediti e assegnazione automatica
+- Dashboard real-time per giocatori e admin
+- Correzione manuale rose per admin
+
+### Composizione Rosa
+- 3 Portieri (P)
+- 8 Difensori (D)  
+- 8 Centrocampisti (C)
+- 6 Attaccanti (A)
+
+## Stack Tecnologico
+
+### Core
+- **Framework**: Next.js 15 (App Router)
+- **Linguaggio**: TypeScript
+- **Database**: PostgreSQL con Prisma ORM
+- **Autenticazione**: NextAuth.js (Google OAuth)
+- **Real-time**: Socket.io
+- **Styling**: Tailwind CSS + Shadcn/ui
+
+### Dipendenze Aggiuntive
+- **xlsx**: Import file Excel
+- **zod**: Validazione dati
+- **react-hook-form**: Gestione form
+- **lucide-react**: Icone
+
+## Schema Database
+
+### Modelli Principali
+
+```prisma
+// User - Utenti dell'applicazione
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          UserRole  @default(PLAYER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Relazioni
+  adminLeagues  League[]  @relation("LeagueAdmin")
+  teams         Team[]
+  selections    PlayerSelection[]
+}
+
+// League - Leghe fantacalcio
+model League {
+  id          String      @id @default(cuid())
+  name        String
+  adminId     String
+  credits     Int         @default(500)
+  status      LeagueStatus @default(SETUP)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relazioni
+  admin       User        @relation("LeagueAdmin", fields: [adminId], references: [id])
+  teams       Team[]
+  players     Player[]
+  rounds      AuctionRound[]
+}
+
+// Team - Squadre dei giocatori
+model Team {
+  id              String    @id @default(cuid())
+  name            String
+  userId          String    
+  leagueId        String
+  remainingCredits Int
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  // Relazioni
+  user            User      @relation(fields: [userId], references: [id])
+  league          League    @relation(fields: [leagueId], references: [id])
+  teamPlayers     TeamPlayer[]
+  
+  @@unique([userId, leagueId])
+}
+
+// Player - Calciatori disponibili
+model Player {
+  id          String      @id @default(cuid())
+  name        String
+  position    Position
+  realTeam    String
+  price       Int
+  leagueId    String
+  isAssigned  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relazioni
+  league      League      @relation(fields: [leagueId], references: [id])
+  teamPlayers TeamPlayer[]
+  selections  PlayerSelection[]
+}
+
+// TeamPlayer - Calciatori assegnati alle squadre
+model TeamPlayer {
+  id          String    @id @default(cuid())
+  teamId      String
+  playerId    String
+  acquiredAt  DateTime  @default(now())
+  
+  // Relazioni
+  team        Team      @relation(fields: [teamId], references: [id])
+  player      Player    @relation(fields: [playerId], references: [id])
+  
+  @@unique([teamId, playerId])
+}
+
+// AuctionRound - Turni d'asta
+model AuctionRound {
+  id          String      @id @default(cuid())
+  leagueId    String
+  position    Position
+  roundNumber Int
+  status      RoundStatus @default(SELECTION)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relazioni
+  league      League      @relation(fields: [leagueId], references: [id])
+  selections  PlayerSelection[]
+}
+
+// PlayerSelection - Selezioni dei giocatori
+model PlayerSelection {
+  id            String    @id @default(cuid())
+  roundId       String
+  userId        String
+  playerId      String
+  randomNumber  Int?
+  isWinner      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  
+  // Relazioni
+  round         AuctionRound @relation(fields: [roundId], references: [id])
+  user          User      @relation(fields: [userId], references: [id])
+  player        Player    @relation(fields: [playerId], references: [id])
+  
+  @@unique([roundId, userId])
+}
+
+// Enums
+enum UserRole {
+  PLAYER
+  ADMIN
+}
+
+enum LeagueStatus {
+  SETUP
+  AUCTION
+  COMPLETED
+}
+
+enum Position {
+  P  // Portiere
+  D  // Difensore
+  C  // Centrocampista
+  A  // Attaccante
+}
+
+enum RoundStatus {
+  SELECTION
+  RESOLUTION
+  COMPLETED
+}
+```
+
+## Struttura Directory
+
+```
+EasyAsta/
+├── CLAUDE.md                 # Questo file
+├── package.json              # Dipendenze e script
+├── next.config.js            # Configurazione Next.js
+├── tailwind.config.js        # Configurazione Tailwind
+├── prisma/
+│   ├── schema.prisma         # Schema database
+│   └── migrations/           # Migrazioni database
+├── src/
+│   ├── app/                  # App Router Next.js 15
+│   │   ├── layout.tsx        # Layout principale
+│   │   ├── page.tsx          # Homepage
+│   │   ├── auth/             # Pagine autenticazione
+│   │   ├── dashboard/        # Dashboard giocatore
+│   │   ├── admin/            # Dashboard admin
+│   │   └── api/              # API routes
+│   │       ├── auth/         # NextAuth endpoints
+│   │       ├── leagues/      # API leghe
+│   │       ├── players/      # API calciatori
+│   │       └── auction/      # API asta
+│   ├── components/           # Componenti riutilizzabili
+│   │   ├── ui/               # Componenti Shadcn/ui
+│   │   ├── auth/             # Componenti autenticazione
+│   │   ├── league/           # Componenti lega
+│   │   ├── player/           # Componenti calciatori
+│   │   └── auction/          # Componenti asta
+│   ├── lib/                  # Utility e configurazioni
+│   │   ├── prisma.ts         # Client Prisma
+│   │   ├── auth.ts           # Configurazione NextAuth
+│   │   ├── socket.ts         # Configurazione Socket.io
+│   │   └── utils.ts          # Utility generiche
+│   ├── hooks/                # Custom hooks
+│   ├── types/                # Definizioni TypeScript
+│   └── styles/               # File CSS
+└── public/                   # Asset statici
+```
+
+## Piano di Sviluppo
+
+### Fase 1: Setup Iniziale (1-2 giorni)
+- [x] Creare CLAUDE.md progetto
+- [x] Inizializzare progetto Next.js 15 con TypeScript
+- [x] Configurare Prisma con PostgreSQL
+- [x] Setup NextAuth.js per Google OAuth
+- [x] Installare dipendenze (Tailwind, Shadcn/ui, Socket.io, xlsx)
+- [x] Configurare environment variables
+
+### Fase 2: Database e Autenticazione (1 giorno)
+- [x] Implementare schema Prisma completo
+- [ ] Creare migrazioni database
+- [x] Configurare NextAuth.js con Google Provider
+- [ ] Implementare middleware protezione route
+- [ ] Test connessione database
+
+### Fase 3: UI Base e Layout (1-2 giorni)
+- [ ] Setup Shadcn/ui e Tailwind
+- [ ] Creare layout base con navigazione
+- [ ] Implementare componenti UI riutilizzabili
+- [ ] Pagina login/logout
+- [ ] Dashboard base per utenti
+
+### Fase 4: Gestione Leghe e Squadre (2 giorni)
+- [ ] API e UI creazione leghe
+- [ ] Sistema partecipazione a leghe
+- [ ] Gestione squadre (4-8 per lega)
+- [ ] Visualizzazione rose con composizione
+- [ ] Validazione regole composizione rosa
+
+### Fase 5: Import e Gestione Calciatori (1 giorno)
+- [ ] Upload file Excel
+- [ ] Parser dati calciatori (Nome, Squadra, P/D/C/A, Prezzo)
+- [ ] Validazione e import in database
+- [ ] CRUD calciatori per admin
+- [ ] Lista calciatori con filtri
+
+### Fase 6: Sistema Asta Core (3-4 giorni)
+- [ ] Logica creazione turni per ruolo
+- [ ] Sistema selezione simultanea calciatori
+- [ ] Generazione numeri casuali per conflitti
+- [ ] Algoritmo assegnazione automatica
+- [ ] Scalamento crediti squadre
+- [ ] Gestione stati asta
+
+### Fase 7: Real-time e Socket.io (2 giorni)
+- [ ] Configurazione server Socket.io
+- [ ] Real-time updates selezioni
+- [ ] Notifiche assegnazioni
+- [ ] Sincronizzazione stati asta
+- [ ] Gestione disconnessioni
+
+### Fase 8: Funzionalità Admin (1-2 giorni)
+- [ ] Pannello controllo asta
+- [ ] Avvio turni e selezione ruoli
+- [ ] Correzione manuale rose
+- [ ] Configurazione crediti lega
+- [ ] Override assegnazioni
+
+### Fase 9: Testing e Ottimizzazioni (1-2 giorni)
+- [ ] Test funzionalità complete
+- [ ] Test performance real-time
+- [ ] Ottimizzazioni database
+- [ ] Gestione errori
+- [ ] Test responsive design
+
+### Fase 10: Deploy (1 giorno)
+- [ ] Configurazione ambiente produzione
+- [ ] Deploy database PostgreSQL
+- [ ] Deploy su Vercel/Railway
+- [ ] Test ambiente produzione
+- [ ] Documentazione deploy
+
+## Todo List Corrente
+
+### Priorità Alta
+- [ ] Inizializzare progetto Next.js 15
+- [ ] Configurare database PostgreSQL
+- [ ] Implementare autenticazione Google
+
+### Priorità Media
+- [ ] Setup UI components
+- [ ] Implementare logica asta
+- [ ] Configurare Socket.io
+
+### Priorità Bassa
+- [ ] Ottimizzazioni performance
+- [ ] Test end-to-end
+- [ ] Deploy produzione
+
+## Comandi Utili
+
+```bash
+# Installazione dipendenze
+npm install
+
+# Avvio sviluppo
+npm run dev
+
+# Build produzione
+npm run build
+
+# Database
+npx prisma migrate dev
+npx prisma generate
+npx prisma studio
+
+# Linting
+npm run lint
+npm run lint:fix
+
+# Type checking
+npm run type-check
+```
+
+## Note Tecniche
+
+### Decisioni Architetturali
+- **Next.js 15 App Router**: Per migliori performance e developer experience
+- **Prisma + PostgreSQL**: Per relazioni complesse e transazioni ACID
+- **Socket.io**: Per real-time senza polling
+- **NextAuth.js**: Per autenticazione sicura e semplice
+- **Shadcn/ui**: Per componenti consistenti e accessibili
+
+### Flusso Asta
+1. Admin avvia turno per ruolo specifico (P/D/C/A)
+2. Tutti i giocatori vedono calciatori disponibili per quel ruolo
+3. Ogni giocatore seleziona un calciatore
+4. Quando tutti hanno selezionato, sistema genera numeri casuali
+5. Calciatori assegnati al numero più alto in caso di conflitto
+6. Crediti scalati automaticamente
+7. Calciatori assegnati rimossi da disponibili
+8. Turno successivo per giocatori senza assegnazione
+9. Quando tutti hanno un calciatore, si passa al ruolo successivo
+
+### Validazioni Importanti
+- Rosa deve avere esattamente 3P, 8D, 8C, 6A
+- Crediti non possono andare in negativo
+- Solo admin può avviare turni
+- File Excel deve avere formato corretto
+- Ruoli devono essere solo P, D, C, A
+
+### Problemi da Risolvere
+- Gestione disconnessioni durante selezione
+- Timeout per selezioni troppo lente
+- Backup/restore stato asta
+- Ottimizzazione query database con molti calciatori
+
+## Stato Attuale
+
+**Data ultimo aggiornamento**: 2025-08-01  
+**Fase corrente**: Fase 1 completata - Inizio Fase 2  
+**Prossimo step**: Creare migrazioni database e testare connessione  
+
+### Completato
+- [x] Definizione requisiti funzionali
+- [x] Design architettura sistema
+- [x] Schema database completo
+- [x] Piano sviluppo dettagliato
+- [x] Creazione CLAUDE.md
+- [x] Inizializzazione progetto Next.js 15
+- [x] Configurazione Prisma completa
+- [x] Setup NextAuth.js base
+- [x] Installazione dipendenze core
+
+### In Corso
+- [ ] Migrazioni database
+- [ ] Test setup iniziale
+
+### Da Fare
+- Database migrations e test
+- UI Base e Layout
+- Gestione Leghe e Squadre
+- Sistema Asta Core
+
+---
+
+**Nota**: Questo file viene aggiornato ad ogni sessione di sviluppo per mantenere traccia dei progressi e delle decisioni tecniche.
