@@ -1,12 +1,11 @@
-"use client"
+"use client";
 
-import { signIn, signOut, useSession } from "next-auth/react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
+import { signIn, signOut, useSession } from "next-auth/react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export function Navbar() {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSession();
 
   return (
     <nav className="border-b bg-background">
@@ -32,22 +31,18 @@ export function Navbar() {
                   </Link>
                 )}
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-muted-foreground">
-                    {session.user?.name}
-                  </span>
+                  <span className="text-sm text-muted-foreground">{session.user?.name}</span>
                   <Button variant="outline" onClick={() => signOut()}>
                     Logout
                   </Button>
                 </div>
               </>
             ) : (
-              <Button onClick={() => signIn("google")}>
-                Accedi con Google
-              </Button>
+              <Button onClick={() => signIn("google")}>Accedi con Google</Button>
             )}
           </div>
         </div>
       </div>
     </nav>
-  )
+  );
 }
