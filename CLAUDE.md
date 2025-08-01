@@ -381,29 +381,45 @@ npm run type-check
 ## Stato Attuale
 
 **Data ultimo aggiornamento**: 2025-08-01  
-**Fase corrente**: Fase 1 completata - Inizio Fase 2  
-**Prossimo step**: Creare migrazioni database e testare connessione  
+**Fase corrente**: Fase 3 completata - UI Base e Layout  
+**Prossimo step**: Iniziare Fase 4 - Gestione Leghe e Squadre  
 
 ### Completato
-- [x] Definizione requisiti funzionali
-- [x] Design architettura sistema
-- [x] Schema database completo
-- [x] Piano sviluppo dettagliato
-- [x] Creazione CLAUDE.md
-- [x] Inizializzazione progetto Next.js 15
-- [x] Configurazione Prisma completa
-- [x] Setup NextAuth.js base
-- [x] Installazione dipendenze core
+- [x] **Fase 1**: Setup Iniziale
+  - [x] Definizione requisiti funzionali
+  - [x] Design architettura sistema
+  - [x] Schema database completo
+  - [x] Piano sviluppo dettagliato
+  - [x] Creazione CLAUDE.md
+  - [x] Inizializzazione progetto Next.js 15
+  - [x] Configurazione Prisma completa
+  - [x] Setup NextAuth.js base
+  - [x] Installazione dipendenze core
+
+- [x] **Fase 2**: Database e Autenticazione
+  - [x] Migrazioni database create e applicate
+  - [x] Test connessione database
+  - [x] Configurazione NextAuth.js con Google OAuth
+  - [x] Middleware protezione route
+
+- [x] **Fase 3**: UI Base e Layout
+  - [x] Setup Shadcn/ui e Tailwind CSS
+  - [x] Layout base con navigazione
+  - [x] Componenti UI riutilizzabili (Button, Card, Input)
+  - [x] Pagina home con autenticazione
+  - [x] Dashboard base per utenti
+  - [x] Sistema di routing protetto
 
 ### In Corso
-- [ ] Migrazioni database
-- [ ] Test setup iniziale
+- [ ] **Fase 4**: Gestione Leghe e Squadre
 
 ### Da Fare
-- Database migrations e test
-- UI Base e Layout
-- Gestione Leghe e Squadre
+- API e UI creazione leghe
+- Sistema partecipazione a leghe
+- Gestione squadre (4-8 per lega)
+- Import e gestione calciatori
 - Sistema Asta Core
+- Real-time con Socket.io
 
 ---
 
