@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,7 @@ interface JoinLeagueFormData {
 export default function LeaguesPage() {
   const { data: session, status } = useSession();
   const t = useTranslations();
+  const locale = useLocale();
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -67,7 +68,7 @@ export default function LeaguesPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect("/api/auth/signin");
+      redirect({ href: "/api/auth/signin", locale });
     }
     if (status === "authenticated") {
       fetchLeagues();
@@ -173,11 +174,11 @@ export default function LeaguesPage() {
         <div className="flex gap-2">
           <Button onClick={() => setShowCreateForm(true)}>
             <Plus className="mr-2 h-4 w-4" />
-            {t('leagues.createLeague')}
+            {t("leagues.createLeague")}
           </Button>
           <Button variant="outline" onClick={() => setShowJoinForm(true)}>
             <Users className="mr-2 h-4 w-4" />
-            {t('leagues.joinLeague')}
+            {t("leagues.joinLeague")}
           </Button>
         </div>
       </div>
@@ -330,7 +331,7 @@ export default function LeaguesPage() {
               </Button>
               <Button variant="outline" onClick={() => setShowJoinForm(true)}>
                 <Users className="mr-2 h-4 w-4" />
-                {t('leagues.joinLeague')}
+                {t("leagues.joinLeague")}
               </Button>
             </div>
           </CardContent>

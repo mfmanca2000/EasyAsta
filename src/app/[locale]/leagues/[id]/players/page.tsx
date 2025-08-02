@@ -16,7 +16,6 @@ import { Upload, Search, Filter, Trash2, Edit, ChevronLeft, ChevronRight, Chevro
 import { TeamLogo } from "@/components/ui/team-logo";
 import { PlayersPageSkeleton, PlayersTableSkeleton } from "@/components/ui/players-skeleton";
 
-
 interface League {
   id: string;
   name: string;
@@ -32,6 +31,7 @@ export default function PlayersPage() {
   const { data: session, status } = useSession();
   const params = useParams();
   const leagueId = params.id as string;
+  const locale = params.locale as string;
 
   const [league, setLeague] = useState<League | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -59,7 +59,7 @@ export default function PlayersPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect("/api/auth/signin");
+      redirect({ href: "/api/auth/signin", locale });
     }
     if (status === "authenticated" && leagueId) {
       fetchLeague();
@@ -105,10 +105,10 @@ export default function PlayersPage() {
         form.reset();
       } else {
         if (result.warning) {
-          const proceed = confirm(`Attenzione:\n${result.details?.join('\n') || ''}\n\nVuoi procedere comunque?`);
+          const proceed = confirm(`Attenzione:\n${result.details?.join("\n") || ""}\n\nVuoi procedere comunque?`);
           if (!proceed) return;
         } else {
-          alert(`Errore: ${result.error}\n${result.details?.join('\n') || ''}`);
+          alert(`Errore: ${result.error}\n${result.details?.join("\n") || ""}`);
         }
       }
     } catch (error) {
@@ -139,20 +139,11 @@ export default function PlayersPage() {
 
   const getSortIcon = (field: string) => {
     if (sorting.field !== field) return null;
-    return sorting.direction === 'asc' ? 
-      <ChevronUp className="h-4 w-4" /> : 
-      <ChevronDown className="h-4 w-4" />;
+    return sorting.direction === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  const SortableHeader = ({ field, children, className = "" }: { 
-    field: string; 
-    children: React.ReactNode; 
-    className?: string;
-  }) => (
-    <TableHead 
-      className={`cursor-pointer hover:bg-muted/50 transition-colors ${className}`}
-      onClick={() => toggleSort(field)}
-    >
+  const SortableHeader = ({ field, children, className = "" }: { field: string; children: React.ReactNode; className?: string }) => (
+    <TableHead className={`cursor-pointer hover:bg-muted/50 transition-colors ${className}`} onClick={() => toggleSort(field)}>
       <div className="flex items-center gap-2">
         {children}
         {getSortIcon(field)}
@@ -162,24 +153,21 @@ export default function PlayersPage() {
 
   const getPositionBadge = (position: Player["position"]) => {
     const styles = {
-      P: "bg-green-100 text-green-800 border-green-200",  // Verde per Portieri
-      D: "bg-blue-100 text-blue-800 border-blue-200",     // Blu per Difensori
+      P: "bg-green-100 text-green-800 border-green-200", // Verde per Portieri
+      D: "bg-blue-100 text-blue-800 border-blue-200", // Blu per Difensori
       C: "bg-yellow-100 text-yellow-800 border-yellow-200", // Giallo per Centrocampisti
-      A: "bg-red-100 text-red-800 border-red-200",        // Rosso per Attaccanti
+      A: "bg-red-100 text-red-800 border-red-200", // Rosso per Attaccanti
     } as const;
 
     const labels = {
       P: "Portiere",
-      D: "Difensore", 
+      D: "Difensore",
       C: "Centrocampista",
       A: "Attaccante",
     };
 
     return (
-      <Badge 
-        className={`${styles[position]} hover:opacity-80 transition-opacity`}
-        variant="outline"
-      >
+      <Badge className={`${styles[position]} hover:opacity-80 transition-opacity`} variant="outline">
         {labels[position]}
       </Badge>
     );
@@ -196,9 +184,7 @@ export default function PlayersPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">Calciatori - {league.name}</h1>
-          <p className="text-muted-foreground">
-            {isAdmin ? "Gestisci i calciatori della tua lega" : "Visualizza i calciatori disponibili"}
-          </p>
+          <p className="text-muted-foreground">{isAdmin ? "Gestisci i calciatori della tua lega" : "Visualizza i calciatori disponibili"}</p>
         </div>
         {isAdmin && league.status === "SETUP" && (
           <Button onClick={() => setShowImportForm(true)}>
@@ -210,84 +196,44 @@ export default function PlayersPage() {
 
       {/* Statistiche */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-lg ${
-            positionFilter === "P" 
-              ? "ring-2 ring-green-500 bg-green-50 border-green-200" 
-              : "hover:bg-green-50/50"
-          }`}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-lg ${positionFilter === "P" ? "ring-2 ring-green-500 bg-green-50 border-green-200" : "hover:bg-green-50/50"}`}
           onClick={() => setPositionFilter(positionFilter === "P" ? "all" : "P")}
         >
           <CardContent className="p-4">
-            <div className={`text-2xl font-bold ${positionFilter === "P" ? "text-green-800" : ""}`}>
-              {stats.P || 0}
-            </div>
-            <div className={`text-sm ${positionFilter === "P" ? "text-green-700" : "text-muted-foreground"}`}>
-              Portieri
-            </div>
-            {positionFilter === "P" && (
-              <div className="text-xs text-green-700 font-medium mt-1">Filtro attivo</div>
-            )}
+            <div className={`text-2xl font-bold ${positionFilter === "P" ? "text-green-800" : ""}`}>{stats.P || 0}</div>
+            <div className={`text-sm ${positionFilter === "P" ? "text-green-700" : "text-muted-foreground"}`}>Portieri</div>
+            {positionFilter === "P" && <div className="text-xs text-green-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-lg ${
-            positionFilter === "D" 
-              ? "ring-2 ring-blue-500 bg-blue-50 border-blue-200" 
-              : "hover:bg-blue-50/50"
-          }`}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-lg ${positionFilter === "D" ? "ring-2 ring-blue-500 bg-blue-50 border-blue-200" : "hover:bg-blue-50/50"}`}
           onClick={() => setPositionFilter(positionFilter === "D" ? "all" : "D")}
         >
           <CardContent className="p-4">
-            <div className={`text-2xl font-bold ${positionFilter === "D" ? "text-blue-800" : ""}`}>
-              {stats.D || 0}
-            </div>
-            <div className={`text-sm ${positionFilter === "D" ? "text-blue-700" : "text-muted-foreground"}`}>
-              Difensori
-            </div>
-            {positionFilter === "D" && (
-              <div className="text-xs text-blue-700 font-medium mt-1">Filtro attivo</div>
-            )}
+            <div className={`text-2xl font-bold ${positionFilter === "D" ? "text-blue-800" : ""}`}>{stats.D || 0}</div>
+            <div className={`text-sm ${positionFilter === "D" ? "text-blue-700" : "text-muted-foreground"}`}>Difensori</div>
+            {positionFilter === "D" && <div className="text-xs text-blue-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-lg ${
-            positionFilter === "C" 
-              ? "ring-2 ring-yellow-500 bg-yellow-50 border-yellow-200" 
-              : "hover:bg-yellow-50/50"
-          }`}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-lg ${positionFilter === "C" ? "ring-2 ring-yellow-500 bg-yellow-50 border-yellow-200" : "hover:bg-yellow-50/50"}`}
           onClick={() => setPositionFilter(positionFilter === "C" ? "all" : "C")}
         >
           <CardContent className="p-4">
-            <div className={`text-2xl font-bold ${positionFilter === "C" ? "text-yellow-800" : ""}`}>
-              {stats.C || 0}
-            </div>
-            <div className={`text-sm ${positionFilter === "C" ? "text-yellow-700" : "text-muted-foreground"}`}>
-              Centrocampisti
-            </div>
-            {positionFilter === "C" && (
-              <div className="text-xs text-yellow-700 font-medium mt-1">Filtro attivo</div>
-            )}
+            <div className={`text-2xl font-bold ${positionFilter === "C" ? "text-yellow-800" : ""}`}>{stats.C || 0}</div>
+            <div className={`text-sm ${positionFilter === "C" ? "text-yellow-700" : "text-muted-foreground"}`}>Centrocampisti</div>
+            {positionFilter === "C" && <div className="text-xs text-yellow-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-lg ${
-            positionFilter === "A" 
-              ? "ring-2 ring-red-500 bg-red-50 border-red-200" 
-              : "hover:bg-red-50/50"
-          }`}
+        <Card
+          className={`cursor-pointer transition-all hover:shadow-lg ${positionFilter === "A" ? "ring-2 ring-red-500 bg-red-50 border-red-200" : "hover:bg-red-50/50"}`}
           onClick={() => setPositionFilter(positionFilter === "A" ? "all" : "A")}
         >
           <CardContent className="p-4">
-            <div className={`text-2xl font-bold ${positionFilter === "A" ? "text-red-800" : ""}`}>
-              {stats.A || 0}
-            </div>
-            <div className={`text-sm ${positionFilter === "A" ? "text-red-700" : "text-muted-foreground"}`}>
-              Attaccanti
-            </div>
-            {positionFilter === "A" && (
-              <div className="text-xs text-red-700 font-medium mt-1">Filtro attivo</div>
-            )}
+            <div className={`text-2xl font-bold ${positionFilter === "A" ? "text-red-800" : ""}`}>{stats.A || 0}</div>
+            <div className={`text-sm ${positionFilter === "A" ? "text-red-700" : "text-muted-foreground"}`}>Attaccanti</div>
+            {positionFilter === "A" && <div className="text-xs text-red-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
       </div>
@@ -297,21 +243,13 @@ export default function PlayersPage() {
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Importa Calciatori da Excel</CardTitle>
-            <CardDescription>
-              Carica un file Excel con i calciatori. Le righe con asterisco (*) verranno ignorate.
-            </CardDescription>
+            <CardDescription>Carica un file Excel con i calciatori. Le righe con asterisco (*) verranno ignorate.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFileUpload} className="space-y-4">
               <div>
                 <Label htmlFor="file">File Excel (.xlsx, .xls)</Label>
-                <Input
-                  id="file"
-                  name="file"
-                  type="file"
-                  accept=".xlsx,.xls"
-                  required
-                />
+                <Input id="file" name="file" type="file" accept=".xlsx,.xls" required />
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={uploading}>
@@ -333,12 +271,7 @@ export default function PlayersPage() {
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cerca per nome o squadra..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+                <Input placeholder="Cerca per nome o squadra..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
             </div>
             <div className="w-40">
@@ -369,8 +302,8 @@ export default function PlayersPage() {
               </Select>
             </div>
             <div className="w-32">
-              <Select 
-                value={pagination.limit === 50 ? "50" : pagination.limit === 100 ? "100" : pagination.limit === -1 ? "all" : "50"} 
+              <Select
+                value={pagination.limit === 50 ? "50" : pagination.limit === 100 ? "100" : pagination.limit === -1 ? "all" : "50"}
                 onValueChange={(value) => setLimit(value === "all" ? -1 : parseInt(value))}
               >
                 <SelectTrigger>
@@ -384,17 +317,20 @@ export default function PlayersPage() {
               </Select>
             </div>
           </div>
-          
+
           {/* Informazioni risultati */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-4 border-t text-sm text-muted-foreground">
             <div className="flex items-center gap-4">
               <span>
                 <strong className="text-foreground">{players.length}</strong> calciatori visualizzati
                 {pagination.total !== players.length && (
-                  <span> di <strong className="text-foreground">{pagination.total}</strong> totali</span>
+                  <span>
+                    {" "}
+                    di <strong className="text-foreground">{pagination.total}</strong> totali
+                  </span>
                 )}
               </span>
-              
+
               {/* Filtri attivi */}
               {(searchTerm || positionFilter !== "all" || availableFilter !== "all") && (
                 <div className="flex items-center gap-2">
@@ -420,16 +356,22 @@ export default function PlayersPage() {
                 </div>
               )}
             </div>
-            
+
             {/* Ordinamento attivo */}
             <div className="flex items-center gap-2">
               <span>Ordinato per:</span>
               <Badge variant="outline" className="text-xs">
-                {sorting.field === "name" ? "Nome" : 
-                 sorting.field === "position" ? "Ruolo" :
-                 sorting.field === "realTeam" ? "Squadra" :
-                 sorting.field === "price" ? "Prezzo" :
-                 sorting.field === "isAssigned" ? "Stato" : sorting.field}
+                {sorting.field === "name"
+                  ? "Nome"
+                  : sorting.field === "position"
+                  ? "Ruolo"
+                  : sorting.field === "realTeam"
+                  ? "Squadra"
+                  : sorting.field === "price"
+                  ? "Prezzo"
+                  : sorting.field === "isAssigned"
+                  ? "Stato"
+                  : sorting.field}
                 {sorting.direction === "asc" ? " ↑" : " ↓"}
               </Badge>
             </div>
@@ -449,19 +391,18 @@ export default function PlayersPage() {
                   <SortableHeader field="name">Nome</SortableHeader>
                   <SortableHeader field="position">Ruolo</SortableHeader>
                   <SortableHeader field="realTeam">Squadra</SortableHeader>
-                  <SortableHeader field="price" className="text-right">Prezzo</SortableHeader>
-                  <SortableHeader field="isAssigned" className="text-center">Stato</SortableHeader>
-                  {isAdmin && league.status === "SETUP" && (
-                    <TableHead className="text-right">Azioni</TableHead>
-                  )}
+                  <SortableHeader field="price" className="text-right">
+                    Prezzo
+                  </SortableHeader>
+                  <SortableHeader field="isAssigned" className="text-center">
+                    Stato
+                  </SortableHeader>
+                  {isAdmin && league.status === "SETUP" && <TableHead className="text-right">Azioni</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {players.map((player) => (
-                  <TableRow 
-                    key={player.id} 
-                    className={player.isAssigned ? 'bg-muted/30' : ''}
-                  >
+                  <TableRow key={player.id} className={player.isAssigned ? "bg-muted/30" : ""}>
                     <TableCell className="font-medium">{player.name}</TableCell>
                     <TableCell>{getPositionBadge(player.position)}</TableCell>
                     <TableCell>
@@ -473,16 +414,20 @@ export default function PlayersPage() {
                     <TableCell className="text-right font-semibold">{player.price}€</TableCell>
                     <TableCell className="text-center">
                       {player.isAssigned ? (
-                        <Badge variant="outline" className="text-xs">Assegnato</Badge>
+                        <Badge variant="outline" className="text-xs">
+                          Assegnato
+                        </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-xs">Disponibile</Badge>
+                        <Badge variant="secondary" className="text-xs">
+                          Disponibile
+                        </Badge>
                       )}
                     </TableCell>
                     {isAdmin && league.status === "SETUP" && (
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             title="Modifica calciatore"
                             onClick={() => {
@@ -492,12 +437,7 @@ export default function PlayersPage() {
                             <Edit className="h-3 w-3" />
                           </Button>
                           {!player.isAssigned && (
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              title="Elimina calciatore"
-                              onClick={() => handleDeletePlayer(player.id, player.name)}
-                            >
+                            <Button size="sm" variant="outline" title="Elimina calciatore" onClick={() => handleDeletePlayer(player.id, player.name)}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
@@ -518,23 +458,18 @@ export default function PlayersPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                {pagination.totalPages === 1 ? (
-                  `Mostrando tutti i ${pagination.total} calciatori`
-                ) : (
-                  `Mostrando ${Math.min(pagination.limit * (pagination.page - 1) + 1, pagination.total)} - ${Math.min(pagination.limit * pagination.page, pagination.total)} di ${pagination.total} calciatori`
-                )}
+                {pagination.totalPages === 1
+                  ? `Mostrando tutti i ${pagination.total} calciatori`
+                  : `Mostrando ${Math.min(pagination.limit * (pagination.page - 1) + 1, pagination.total)} - ${Math.min(pagination.limit * pagination.page, pagination.total)} di ${
+                      pagination.total
+                    } calciatori`}
               </div>
               <div className="flex items-center gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={prevPage}
-                  disabled={pagination.page === 1}
-                >
+                <Button variant="outline" size="sm" onClick={prevPage} disabled={pagination.page === 1}>
                   <ChevronLeft className="h-4 w-4" />
                   Precedente
                 </Button>
-                
+
                 <div className="flex items-center gap-1">
                   {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                     let pageNum;
@@ -547,27 +482,16 @@ export default function PlayersPage() {
                     } else {
                       pageNum = pagination.page - 2 + i;
                     }
-                    
+
                     return (
-                      <Button
-                        key={pageNum}
-                        variant={pagination.page === pageNum ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => goToPage(pageNum)}
-                        className="w-8 h-8 p-0"
-                      >
+                      <Button key={pageNum} variant={pagination.page === pageNum ? "default" : "outline"} size="sm" onClick={() => goToPage(pageNum)} className="w-8 h-8 p-0">
                         {pageNum}
                       </Button>
                     );
                   })}
                 </div>
 
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={nextPage}
-                  disabled={pagination.page === pagination.totalPages}
-                >
+                <Button variant="outline" size="sm" onClick={nextPage} disabled={pagination.page === pagination.totalPages}>
                   Successiva
                   <ChevronRight className="h-4 w-4" />
                 </Button>
@@ -582,12 +506,7 @@ export default function PlayersPage() {
           <CardContent className="py-12 text-center">
             <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nessun Calciatore Trovato</h3>
-            <p className="text-muted-foreground mb-4">
-              {isAdmin 
-                ? "Importa un file Excel per aggiungere i calciatori alla lega." 
-                : "Non ci sono ancora calciatori in questa lega."
-              }
-            </p>
+            <p className="text-muted-foreground mb-4">{isAdmin ? "Importa un file Excel per aggiungere i calciatori alla lega." : "Non ci sono ancora calciatori in questa lega."}</p>
             {isAdmin && league.status === "SETUP" && (
               <Button onClick={() => setShowImportForm(true)}>
                 <Upload className="mr-2 h-4 w-4" />

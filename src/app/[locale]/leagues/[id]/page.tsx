@@ -7,7 +7,7 @@ import { League, Team, useLeague } from "@/hooks/useLeague";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Trophy, Settings, Crown, UserCheck, FileText } from "lucide-react";
+import { Users, Trophy, Settings, Crown, UserCheck, FileText, Gavel } from "lucide-react";
 import { Link, redirect } from "@/i18n/navigation";
 import { LeagueDetailSkeleton } from "@/components/ui/league-detail-skeleton";
 
@@ -15,11 +15,12 @@ export default function LeagueDetailPage() {
   const { data: session, status } = useSession();
   const params = useParams();
   const leagueId = params.id as string;
+  const locale = params.locale as string;
   const { league, userTeam, isAdmin, loading, fetchLeague } = useLeague(leagueId);
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect("/api/auth/signin");
+      redirect({ href: "/api/auth/signin", locale });
     }
     if (status === "authenticated" && leagueId) {
       fetchLeague();
@@ -89,6 +90,12 @@ export default function LeagueDetailPage() {
             <Button variant="outline">
               <FileText className="mr-2 h-4 w-4" />
               Calciatori
+            </Button>
+          </Link>
+          <Link href={`/leagues/${league.id}/auction`}>
+            <Button variant={league.status === "AUCTION" ? "default" : "outline"}>
+              <Gavel className="mr-2 h-4 w-4" />
+              Asta
             </Button>
           </Link>
           {isAdmin && (
