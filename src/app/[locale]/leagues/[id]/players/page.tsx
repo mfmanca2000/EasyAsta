@@ -65,7 +65,7 @@ export default function PlayersPage() {
       fetchLeague();
       fetchPlayers();
     }
-  }, [status, leagueId, fetchPlayers, fetchLeague]);
+  }, [status, leagueId, fetchPlayers, fetchLeague, locale]);
 
   // Reset alla pagina 1 quando cambiano i filtri
   useEffect(() => {

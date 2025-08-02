@@ -31,7 +31,7 @@ export default function RosterPage() {
     if (status === "authenticated" && leagueId) {
       fetchLeague();
     }
-  }, [status, leagueId, fetchLeague]);
+  }, [status, leagueId, fetchLeague, locale]);
 
   // Imposta la squadra dell'utente corrente come default quando la lega è caricata
   useEffect(() => {

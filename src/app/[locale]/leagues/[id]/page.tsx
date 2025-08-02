@@ -25,7 +25,7 @@ export default function LeagueDetailPage() {
     if (status === "authenticated" && leagueId) {
       fetchLeague();
     }
-  }, [status, leagueId, fetchLeague]);
+  }, [status, leagueId, fetchLeague, locale]);
 
   const getStatusBadge = (status: League["status"]) => {
     const variants = {

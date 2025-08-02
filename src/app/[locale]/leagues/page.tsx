@@ -73,7 +73,7 @@ export default function LeaguesPage() {
     if (status === "authenticated") {
       fetchLeagues();
     }
-  }, [status]);
+  }, [status, locale]);
 
   const fetchLeagues = async () => {
     try {
