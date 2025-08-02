@@ -75,6 +75,7 @@ export default function AuctionPage() {
   const [polling, setPolling] = useState(false)
   const [nextRoundStats, setNextRoundStats] = useState<NextRoundStats | null>(null)
   const [showNextRoundModal, setShowNextRoundModal] = useState(false)
+  const [teamCount, setTeamCount] = useState(0)
 
   const leagueId = params.id as string
 
@@ -102,6 +103,7 @@ export default function AuctionPage() {
       
       if (response.ok && data.league) {
         setIsAdmin(data.league.admin.email === session?.user?.email)
+        setTeamCount(data.league.teams?.length || 0)
       }
     } catch (error) {
       console.error('Errore verifica admin:', error)
@@ -292,12 +294,33 @@ export default function AuctionPage() {
             {isAdmin ? (
               <div className="space-y-4">
                 {!auctionState ? (
-                  <Button onClick={startAuction} disabled={loading}>
-                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                    Avvia Asta
-                  </Button>
+                  <>
+                    {teamCount < 4 && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Squadre insufficienti:</strong> Servono almeno 4 squadre per avviare l'asta. 
+                          Attualmente: {teamCount}/4 squadre.
+                        </p>
+                      </div>
+                    )}
+                    <Button 
+                      onClick={startAuction} 
+                      disabled={loading || teamCount < 4}
+                    >
+                      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                      Avvia Asta
+                    </Button>
+                  </>
                 ) : (
                   <>
+                    {teamCount < 4 && (
+                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-sm text-yellow-800">
+                          <strong>Squadre insufficienti:</strong> Servono almeno 4 squadre per continuare l'asta. 
+                          Attualmente: {teamCount}/4 squadre.
+                        </p>
+                      </div>
+                    )}
                     <p className="text-muted-foreground mb-4">
                       Turno completato. Scegli il ruolo per il prossimo turno:
                     </p>
@@ -306,7 +329,7 @@ export default function AuctionPage() {
                         await fetchNextRoundStats()
                         setShowNextRoundModal(true)
                       }} 
-                      disabled={loading}
+                      disabled={loading || teamCount < 4}
                     >
                       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                       Avvia Prossimo Turno

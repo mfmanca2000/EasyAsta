@@ -213,6 +213,10 @@ EasyAsta/
 │   │       ├── leagues/      # API leghe
 │   │       ├── players/      # API calciatori
 │   │       └── auction/      # API asta
+│   │           ├── route.ts       # Avvio asta e stato
+│   │           ├── select/        # Selezione calciatori
+│   │           ├── resolve/       # Risoluzione turni
+│   │           └── next-round/    # Creazione turno successivo
 │   ├── components/           # Componenti riutilizzabili
 │   │   ├── ui/               # Componenti Shadcn/ui
 │   │   ├── auth/             # Componenti autenticazione
@@ -222,6 +226,7 @@ EasyAsta/
 │   ├── lib/                  # Utility e configurazioni
 │   │   ├── prisma.ts         # Client Prisma
 │   │   ├── auth.ts           # Configurazione NextAuth
+│   │   ├── auction.ts        # Logica core asta
 │   │   ├── socket.ts         # Configurazione Socket.io
 │   │   └── utils.ts          # Utility generiche
 │   ├── hooks/                # Custom hooks
@@ -277,12 +282,12 @@ EasyAsta/
 - [x] Lista calciatori con filtri
 
 ### Fase 7: Sistema Asta Core (3-4 giorni)
-- [ ] Logica creazione turni per ruolo
-- [ ] Sistema selezione simultanea calciatori
-- [ ] Generazione numeri casuali per conflitti
-- [ ] Algoritmo assegnazione automatica
-- [ ] Scalamento crediti squadre
-- [ ] Gestione stati asta
+- [x] Logica creazione turni per ruolo
+- [x] Sistema selezione simultanea calciatori
+- [x] Generazione numeri casuali per conflitti
+- [x] Algoritmo assegnazione automatica
+- [x] Scalamento crediti squadre
+- [x] Gestione stati asta
 
 ### Fase 8: Real-time e Socket.io (2 giorni)
 - [ ] Configurazione server Socket.io
@@ -363,16 +368,18 @@ npm run type-check
 - **NextAuth.js**: Per autenticazione sicura e semplice
 - **Shadcn/ui**: Per componenti consistenti e accessibili
 
-### Flusso Asta
-1. Admin avvia turno per ruolo specifico (P/D/C/A)
-2. Tutti i giocatori vedono calciatori disponibili per quel ruolo
+### Flusso Asta (Aggiornato)
+1. Admin avvia l'asta (primo turno Portieri automatico)
+2. Tutti i giocatori vedono calciatori disponibili per il ruolo corrente
 3. Ogni giocatore seleziona un calciatore
-4. Quando tutti hanno selezionato, sistema genera numeri casuali
-5. Calciatori assegnati al numero più alto in caso di conflitto
-6. Crediti scalati automaticamente
-7. Calciatori assegnati rimossi da disponibili
-8. Turno successivo per giocatori senza assegnazione
-9. Quando tutti hanno un calciatore, si passa al ruolo successivo
+4. Quando tutti hanno selezionato, sistema passa in RESOLUTION
+5. Admin risolve il turno manualmente o automaticamente
+6. Sistema genera numeri casuali per conflitti
+7. Calciatori assegnati al numero più alto, crediti scalati
+8. **NOVITÀ**: Admin sceglie il ruolo per il prossimo turno tramite modal
+9. Modal mostra statistiche e raccomandazioni per ogni ruolo
+10. Admin seleziona ruolo e si ripete il processo
+11. Asta completata quando tutte le rose sono al completo (3P/8D/8C/6A)
 
 ### Validazioni Importanti
 - Rosa deve avere esattamente 3P, 8D, 8C, 6A
@@ -381,17 +388,25 @@ npm run type-check
 - File Excel deve avere formato corretto
 - Ruoli devono essere solo P, D, C, A
 
+### Miglioramenti Implementati
+- ✅ **Flessibilità Turni**: Admin può scegliere qualsiasi ruolo per il turno successivo
+- ✅ **Statistiche Smart**: Modal con dati dettagliati per aiutare l'admin nella scelta
+- ✅ **Gestione Locale**: Redirect dinamici basati su locale corrente
+- ✅ **Validazione Robusta**: Controlli crediti, stato lega, duplicati
+- ✅ **Transazioni Database**: Operazioni atomiche per consistency
+
 ### Problemi da Risolvere
-- Gestione disconnessioni durante selezione
+- Sostituire polling con Socket.io per real-time
 - Timeout per selezioni troppo lente
 - Backup/restore stato asta
 - Ottimizzazione query database con molti calciatori
+- Gestione disconnessioni durante selezione
 
 ## Stato Attuale
 
 **Data ultimo aggiornamento**: 2025-08-02  
-**Fase corrente**: Fasi 1-6 completate  
-**Prossimo step**: Iniziare Fase 7 - Sistema Asta Core  
+**Fase corrente**: Fasi 1-7 completate  
+**Prossimo step**: Iniziare Fase 8 - Real-time con Socket.io  
 
 ### Completato
 - [x] **Fase 1**: Setup Iniziale
@@ -439,18 +454,25 @@ npm run type-check
   - [x] Interfaccia gestione calciatori per admin
   - [x] Funzionalità eliminazione calciatori
 
+- [x] **Fase 7**: Sistema Asta Core
+  - [x] API sistema asta (/api/auction, /api/auction/select, /api/auction/resolve)
+  - [x] Logica creazione turni per ruolo (P/D/C/A)
+  - [x] Sistema selezione simultanea calciatori
+  - [x] Generazione numeri casuali per conflitti automatici
+  - [x] Algoritmo assegnazione automatica con transazioni
+  - [x] Scalamento crediti squadre
+  - [x] Gestione stati asta (SETUP → AUCTION → COMPLETED)
+  - [x] Pagina asta completa con interfaccia admin e giocatori
+  - [x] Sistema flessibile di scelta ruolo da parte admin
+  - [x] Modal statistiche per selezione prossimo ruolo
+  - [x] Polling real-time per aggiornamenti (temporaneo)
+
 ### In Corso
-- [ ] **Fase 7**: Sistema Asta Core
+- [ ] **Fase 8**: Real-time e Socket.io
 
 ### Da Fare
-- Logica creazione turni per ruolo (P/D/C/A)
-- Sistema selezione simultanea calciatori
-- Generazione numeri casuali per conflitti
-- Algoritmo assegnazione automatica
-- Scalamento crediti squadre
-- Gestione stati asta
-- Real-time con Socket.io (Fase 8)
-- Funzionalità Admin (Fase 9)
+- Real-time con Socket.io (sostituire polling)
+- Funzionalità Admin avanzate (Fase 9)
 - Testing e Ottimizzazioni (Fase 10)
 - Deploy (Fase 11)
 - Internazionalizzazione (Fase 4) - Opzionale
