@@ -270,11 +270,11 @@ EasyAsta/
 - [x] Validazione regole composizione rosa
 
 ### Fase 6: Import e Gestione Calciatori (1 giorno)
-- [ ] Upload file Excel
-- [ ] Parser dati calciatori (Nome, Squadra, P/D/C/A, Prezzo)
-- [ ] Validazione e import in database
-- [ ] CRUD calciatori per admin
-- [ ] Lista calciatori con filtri
+- [x] Upload file Excel
+- [x] Parser dati calciatori (Nome, Squadra, P/D/C/A, Prezzo)
+- [x] Validazione e import in database
+- [x] CRUD calciatori per admin
+- [x] Lista calciatori con filtri
 
 ### Fase 7: Sistema Asta Core (3-4 giorni)
 - [ ] Logica creazione turni per ruolo
@@ -390,8 +390,8 @@ npm run type-check
 ## Stato Attuale
 
 **Data ultimo aggiornamento**: 2025-08-02  
-**Fase corrente**: Fasi 1-5 completate  
-**Prossimo step**: Iniziare Fase 6 - Import e Gestione Calciatori  
+**Fase corrente**: Fasi 1-6 completate  
+**Prossimo step**: Iniziare Fase 7 - Sistema Asta Core  
 
 ### Completato
 - [x] **Fase 1**: Setup Iniziale
@@ -429,15 +429,26 @@ npm run type-check
   - [x] Visualizzatore rose con filtri
   - [x] Navigazione "Leghe" in navbar
 
+- [x] **Fase 6**: Import e Gestione Calciatori
+  - [x] Upload file Excel con validazione formato
+  - [x] Parser calciatori Excel (Nome, Squadra, P/D/C/A, Prezzo)
+  - [x] Validazione e import database con transazioni
+  - [x] API CRUD completa calciatori (GET, POST, PUT, DELETE)
+  - [x] Lista calciatori con filtri avanzati (ricerca, ruolo, stato)
+  - [x] Paginazione e ordinamento dinamico
+  - [x] Interfaccia gestione calciatori per admin
+  - [x] Funzionalità eliminazione calciatori
+
 ### In Corso
-- [ ] **Fase 6**: Import e Gestione Calciatori
+- [ ] **Fase 7**: Sistema Asta Core
 
 ### Da Fare
-- Upload file Excel calciatori
-- Parser e validazione dati calciatori  
-- CRUD calciatori per admin
-- Lista calciatori con filtri
-- Sistema Asta Core (Fase 7)
+- Logica creazione turni per ruolo (P/D/C/A)
+- Sistema selezione simultanea calciatori
+- Generazione numeri casuali per conflitti
+- Algoritmo assegnazione automatica
+- Scalamento crediti squadre
+- Gestione stati asta
 - Real-time con Socket.io (Fase 8)
 - Funzionalità Admin (Fase 9)
 - Testing e Ottimizzazioni (Fase 10)

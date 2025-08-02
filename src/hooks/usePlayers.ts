@@ -128,6 +128,29 @@ export function usePlayers(leagueId: string) {
     }
   }, [leagueId, fetchPlayers]);
 
+  const deletePlayer = useCallback(async (playerId: string) => {
+    if (!leagueId) return { success: false, error: "ID lega mancante" };
+
+    try {
+      const response = await fetch(`/api/players/${playerId}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Ricarica la lista dopo l'eliminazione
+        await fetchPlayers();
+        return { success: true, data: result };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error("Errore eliminazione calciatore:", error);
+      return { success: false, error: "Errore durante l'eliminazione del calciatore" };
+    }
+  }, [leagueId, fetchPlayers]);
+
   const goToPage = useCallback((page: number) => {
     setState(prev => ({
       ...prev,
@@ -185,6 +208,7 @@ export function usePlayers(leagueId: string) {
     ...state,
     fetchPlayers,
     importPlayers,
+    deletePlayer,
     goToPage,
     nextPage,
     prevPage,

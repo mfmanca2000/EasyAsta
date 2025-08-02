@@ -43,7 +43,7 @@ export default function PlayersPage() {
   const [availableFilter, setAvailableFilter] = useState<string>("all");
 
   // Hook per gestire calciatori
-  const { players, stats, loading, pagination, sorting, fetchPlayers, importPlayers, goToPage, nextPage, prevPage, toggleSort, setLimit } = usePlayers(leagueId);
+  const { players, stats, loading, pagination, sorting, fetchPlayers, importPlayers, deletePlayer, goToPage, nextPage, prevPage, toggleSort, setLimit } = usePlayers(leagueId);
 
   const fetchLeague = useCallback(async () => {
     try {
@@ -116,6 +116,24 @@ export default function PlayersPage() {
       alert("Errore durante l'upload del file");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeletePlayer = async (playerId: string, playerName: string) => {
+    if (!confirm(`Sei sicuro di voler eliminare ${playerName}?`)) {
+      return;
+    }
+
+    try {
+      const result = await deletePlayer(playerId);
+      if (result.success) {
+        alert("Calciatore eliminato con successo");
+      } else {
+        alert(`Errore: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Errore eliminazione:", error);
+      alert("Errore durante l'eliminazione");
     }
   };
 
@@ -463,11 +481,23 @@ export default function PlayersPage() {
                     {isAdmin && league.status === "SETUP" && (
                       <TableCell className="text-right">
                         <div className="flex gap-1 justify-end">
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            title="Modifica calciatore"
+                            onClick={() => {
+                              alert("Funzionalità di modifica in arrivo nella prossima versione");
+                            }}
+                          >
                             <Edit className="h-3 w-3" />
                           </Button>
                           {!player.isAssigned && (
-                            <Button size="sm" variant="outline">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              title="Elimina calciatore"
+                              onClick={() => handleDeletePlayer(player.id, player.name)}
+                            >
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
