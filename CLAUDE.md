@@ -41,6 +41,7 @@ Applicazione web che permette di gestire aste del fantacalcio con sistema di tur
 - **zod**: Validazione dati
 - **react-hook-form**: Gestione form
 - **lucide-react**: Icone
+- **next-intl**: Internazionalizzazione
 
 ## Schema Database
 
@@ -241,33 +242,41 @@ EasyAsta/
 
 ### Fase 2: Database e Autenticazione (1 giorno)
 - [x] Implementare schema Prisma completo
-- [ ] Creare migrazioni database
+- [x] Creare migrazioni database
 - [x] Configurare NextAuth.js con Google Provider
-- [ ] Implementare middleware protezione route
-- [ ] Test connessione database
+- [x] Implementare middleware protezione route
+- [x] Test connessione database
 
 ### Fase 3: UI Base e Layout (1-2 giorni)
-- [ ] Setup Shadcn/ui e Tailwind
-- [ ] Creare layout base con navigazione
-- [ ] Implementare componenti UI riutilizzabili
-- [ ] Pagina login/logout
-- [ ] Dashboard base per utenti
+- [x] Setup Shadcn/ui e Tailwind
+- [x] Creare layout base con navigazione
+- [x] Implementare componenti UI riutilizzabili
+- [x] Pagina login/logout
+- [x] Dashboard base per utenti
 
-### Fase 4: Gestione Leghe e Squadre (2 giorni)
-- [ ] API e UI creazione leghe
-- [ ] Sistema partecipazione a leghe
-- [ ] Gestione squadre (4-8 per lega)
-- [ ] Visualizzazione rose con composizione
-- [ ] Validazione regole composizione rosa
+### Fase 4: Internazionalizzazione (1 giorno)
+- [ ] Configurare next-intl per supporto multilingue
+- [ ] Creare file di traduzione (IT/EN)
+- [ ] Implementare switch lingua in UI
+- [ ] Tradurre componenti UI base e messaggi
+- [ ] Localizzazione date e numeri
+- [ ] Test funzionalità multilingue
 
-### Fase 5: Import e Gestione Calciatori (1 giorno)
+### Fase 5: Gestione Leghe e Squadre (2 giorni)
+- [x] API e UI creazione leghe
+- [x] Sistema partecipazione a leghe
+- [x] Gestione squadre (4-8 per lega)
+- [x] Visualizzazione rose con composizione
+- [x] Validazione regole composizione rosa
+
+### Fase 6: Import e Gestione Calciatori (1 giorno)
 - [ ] Upload file Excel
 - [ ] Parser dati calciatori (Nome, Squadra, P/D/C/A, Prezzo)
 - [ ] Validazione e import in database
 - [ ] CRUD calciatori per admin
 - [ ] Lista calciatori con filtri
 
-### Fase 6: Sistema Asta Core (3-4 giorni)
+### Fase 7: Sistema Asta Core (3-4 giorni)
 - [ ] Logica creazione turni per ruolo
 - [ ] Sistema selezione simultanea calciatori
 - [ ] Generazione numeri casuali per conflitti
@@ -275,28 +284,28 @@ EasyAsta/
 - [ ] Scalamento crediti squadre
 - [ ] Gestione stati asta
 
-### Fase 7: Real-time e Socket.io (2 giorni)
+### Fase 8: Real-time e Socket.io (2 giorni)
 - [ ] Configurazione server Socket.io
 - [ ] Real-time updates selezioni
 - [ ] Notifiche assegnazioni
 - [ ] Sincronizzazione stati asta
 - [ ] Gestione disconnessioni
 
-### Fase 8: Funzionalità Admin (1-2 giorni)
+### Fase 9: Funzionalità Admin (1-2 giorni)
 - [ ] Pannello controllo asta
 - [ ] Avvio turni e selezione ruoli
 - [ ] Correzione manuale rose
 - [ ] Configurazione crediti lega
 - [ ] Override assegnazioni
 
-### Fase 9: Testing e Ottimizzazioni (1-2 giorni)
+### Fase 10: Testing e Ottimizzazioni (1-2 giorni)
 - [ ] Test funzionalità complete
 - [ ] Test performance real-time
 - [ ] Ottimizzazioni database
 - [ ] Gestione errori
 - [ ] Test responsive design
 
-### Fase 10: Deploy (1 giorno)
+### Fase 11: Deploy (1 giorno)
 - [ ] Configurazione ambiente produzione
 - [ ] Deploy database PostgreSQL
 - [ ] Deploy su Vercel/Railway
@@ -380,9 +389,9 @@ npm run type-check
 
 ## Stato Attuale
 
-**Data ultimo aggiornamento**: 2025-08-01  
-**Fase corrente**: Fase 3 completata - UI Base e Layout  
-**Prossimo step**: Iniziare Fase 4 - Gestione Leghe e Squadre  
+**Data ultimo aggiornamento**: 2025-08-02  
+**Fase corrente**: Fasi 1-5 completate  
+**Prossimo step**: Iniziare Fase 6 - Import e Gestione Calciatori  
 
 ### Completato
 - [x] **Fase 1**: Setup Iniziale
@@ -410,16 +419,30 @@ npm run type-check
   - [x] Dashboard base per utenti
   - [x] Sistema di routing protetto
 
+- [x] **Fase 5**: Gestione Leghe e Squadre
+  - [x] API creazione leghe (POST /api/leagues)
+  - [x] API partecipazione leghe (POST /api/leagues/join)
+  - [x] API dettagli lega (GET /api/leagues/[id])
+  - [x] UI form creazione e partecipazione leghe
+  - [x] Sistema gestione squadre (4-8 per lega)
+  - [x] Validazione composizione rosa (3P/8D/8C/6A)
+  - [x] Visualizzatore rose con filtri
+  - [x] Navigazione "Leghe" in navbar
+
 ### In Corso
-- [ ] **Fase 4**: Gestione Leghe e Squadre
+- [ ] **Fase 6**: Import e Gestione Calciatori
 
 ### Da Fare
-- API e UI creazione leghe
-- Sistema partecipazione a leghe
-- Gestione squadre (4-8 per lega)
-- Import e gestione calciatori
-- Sistema Asta Core
-- Real-time con Socket.io
+- Upload file Excel calciatori
+- Parser e validazione dati calciatori  
+- CRUD calciatori per admin
+- Lista calciatori con filtri
+- Sistema Asta Core (Fase 7)
+- Real-time con Socket.io (Fase 8)
+- Funzionalità Admin (Fase 9)
+- Testing e Ottimizzazioni (Fase 10)
+- Deploy (Fase 11)
+- Internazionalizzazione (Fase 4) - Opzionale
 
 ---
 

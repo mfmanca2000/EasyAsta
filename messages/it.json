@@ -1,0 +1,129 @@
+{
+  "common": {
+    "loading": "Caricamento...",
+    "error": "Errore",
+    "success": "Successo",
+    "cancel": "Annulla",
+    "save": "Salva",
+    "delete": "Elimina",
+    "edit": "Modifica",
+    "create": "Crea",
+    "back": "Indietro",
+    "next": "Avanti",
+    "previous": "Precedente",
+    "search": "Cerca",
+    "filter": "Filtra",
+    "all": "Tutti",
+    "name": "Nome",
+    "email": "Email",
+    "date": "Data",
+    "actions": "Azioni"
+  },
+  "auth": {
+    "signIn": "Accedi",
+    "signOut": "Esci",
+    "signInWith": "Accedi con {provider}",
+    "welcome": "Benvenuto",
+    "signInToAccess": "Accedi per continuare"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "leagues": "Leghe",
+    "players": "Calciatori",
+    "auction": "Asta",
+    "admin": "Admin"
+  },
+  "home": {
+    "title": "EasyAsta",
+    "subtitle": "Gestione Aste Fantacalcio",
+    "description": "La piattaforma completa per organizzare e partecipare alle aste del fantacalcio con sistema di turni, selezioni simultanee e risoluzione automatica dei conflitti.",
+    "getStarted": "Inizia",
+    "features": {
+      "title": "Funzionalità Principali",
+      "realTime": {
+        "title": "Aste in Tempo Reale",
+        "description": "Sistema di aste sincronizzate con aggiornamenti istantanei per tutti i partecipanti"
+      },
+      "autoConflict": {
+        "title": "Risoluzione Automatica",
+        "description": "Gestione automatica dei conflitti tramite numeri casuali quando più giocatori scelgono lo stesso calciatore"
+      },
+      "teamManagement": {
+        "title": "Gestione Squadre",
+        "description": "Organizza leghe da 4 a 8 squadre con composizione automatica delle rose (3P/8D/8C/6A)"
+      }
+    }
+  },
+  "leagues": {
+    "title": "Le Mie Leghe",
+    "createLeague": "Crea Lega",
+    "joinLeague": "Partecipa a Lega",
+    "noLeagues": "Non partecipi ancora a nessuna lega",
+    "createFirst": "Crea la tua prima lega o partecipa a una esistente",
+    "form": {
+      "name": "Nome Lega",
+      "namePlaceholder": "Inserisci il nome della lega",
+      "credits": "Crediti Iniziali",
+      "creditsPlaceholder": "500",
+      "leagueCode": "Codice Lega",
+      "leagueCodePlaceholder": "Inserisci il codice della lega",
+      "teamName": "Nome Squadra",
+      "teamNamePlaceholder": "Inserisci il nome della tua squadra"
+    },
+    "status": {
+      "setup": "Configurazione",
+      "auction": "Asta in Corso",
+      "completed": "Completata"
+    },
+    "details": {
+      "admin": "Amministratore",
+      "teams": "Squadre",
+      "credits": "Crediti",
+      "status": "Stato",
+      "actions": "Azioni",
+      "viewDetails": "Visualizza Dettagli",
+      "manageRoster": "Gestisci Rosa",
+      "viewPlayers": "Vedi Calciatori"
+    }
+  },
+  "roster": {
+    "title": "Rosa {teamName}",
+    "composition": "Composizione Rosa",
+    "positions": {
+      "P": "Portieri",
+      "D": "Difensori", 
+      "C": "Centrocampisti",
+      "A": "Attaccanti"
+    },
+    "requirements": {
+      "P": "3 Portieri",
+      "D": "8 Difensori",
+      "C": "8 Centrocampisti", 
+      "A": "6 Attaccanti"
+    },
+    "empty": "Nessun calciatore in questa posizione",
+    "totalPlayers": "Totale Calciatori: {count}/25",
+    "remainingCredits": "Crediti Rimanenti: {credits}"
+  },
+  "players": {
+    "title": "Calciatori",
+    "import": "Importa Calciatori",
+    "filterByPosition": "Filtra per Ruolo",
+    "filterByTeam": "Filtra per Squadra",
+    "noPlayers": "Nessun calciatore trovato",
+    "position": "Ruolo",
+    "team": "Squadra",
+    "price": "Prezzo",
+    "status": "Stato",
+    "available": "Disponibile",
+    "assigned": "Assegnato"
+  },
+  "errors": {
+    "generic": "Si è verificato un errore",
+    "unauthorized": "Non autorizzato",
+    "notFound": "Non trovato",
+    "validation": "Errore di validazione",
+    "network": "Errore di connessione"
+  }
+}

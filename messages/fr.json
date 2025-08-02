@@ -1,0 +1,129 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "all": "Tous",
+    "name": "Nom",
+    "email": "Email",
+    "date": "Date",
+    "actions": "Actions"
+  },
+  "auth": {
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter",
+    "signInWith": "Se connecter avec {provider}",
+    "welcome": "Bienvenue",
+    "signInToAccess": "Connectez-vous pour continuer"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "leagues": "Ligues",
+    "players": "Joueurs",
+    "auction": "Enchères",
+    "admin": "Admin"
+  },
+  "home": {
+    "title": "EasyAsta",
+    "subtitle": "Gestion des Enchères Fantasy Football",
+    "description": "La plateforme complète pour organiser et participer aux enchères de fantasy football avec système de tours, sélections simultanées et résolution automatique des conflits.",
+    "getStarted": "Commencer",
+    "features": {
+      "title": "Fonctionnalités Principales",
+      "realTime": {
+        "title": "Enchères en Temps Réel",
+        "description": "Système d'enchères synchronisées avec mises à jour instantanées pour tous les participants"
+      },
+      "autoConflict": {
+        "title": "Résolution Automatique",
+        "description": "Gestion automatique des conflits via des nombres aléatoires quand plusieurs joueurs choisissent le même footballeur"
+      },
+      "teamManagement": {
+        "title": "Gestion d'Équipes",
+        "description": "Organisez des ligues de 4 à 8 équipes avec composition automatique des effectifs (3G/8D/8M/6A)"
+      }
+    }
+  },
+  "leagues": {
+    "title": "Mes Ligues",
+    "createLeague": "Créer une Ligue",
+    "joinLeague": "Rejoindre une Ligue",
+    "noLeagues": "Vous ne participez encore à aucune ligue",
+    "createFirst": "Créez votre première ligue ou rejoignez-en une existante",
+    "form": {
+      "name": "Nom de la Ligue",
+      "namePlaceholder": "Entrez le nom de la ligue",
+      "credits": "Crédits Initiaux",
+      "creditsPlaceholder": "500",
+      "leagueCode": "Code de la Ligue",
+      "leagueCodePlaceholder": "Entrez le code de la ligue",
+      "teamName": "Nom de l'Équipe",
+      "teamNamePlaceholder": "Entrez le nom de votre équipe"
+    },
+    "status": {
+      "setup": "Configuration",
+      "auction": "Enchères en Cours",
+      "completed": "Terminée"
+    },
+    "details": {
+      "admin": "Administrateur",
+      "teams": "Équipes",
+      "credits": "Crédits",
+      "status": "Statut",
+      "actions": "Actions",
+      "viewDetails": "Voir les Détails",
+      "manageRoster": "Gérer l'Effectif",
+      "viewPlayers": "Voir les Joueurs"
+    }
+  },
+  "roster": {
+    "title": "Effectif {teamName}",
+    "composition": "Composition de l'Effectif",
+    "positions": {
+      "P": "Gardiens",
+      "D": "Défenseurs",
+      "C": "Milieux",
+      "A": "Attaquants"
+    },
+    "requirements": {
+      "P": "3 Gardiens",
+      "D": "8 Défenseurs",
+      "C": "8 Milieux",
+      "A": "6 Attaquants"
+    },
+    "empty": "Aucun joueur à cette position",
+    "totalPlayers": "Total Joueurs: {count}/25",
+    "remainingCredits": "Crédits Restants: {credits}"
+  },
+  "players": {
+    "title": "Joueurs",
+    "import": "Importer des Joueurs",
+    "filterByPosition": "Filtrer par Poste",
+    "filterByTeam": "Filtrer par Équipe",
+    "noPlayers": "Aucun joueur trouvé",
+    "position": "Poste",
+    "team": "Équipe",
+    "price": "Prix",
+    "status": "Statut",
+    "available": "Disponible",
+    "assigned": "Assigné"
+  },
+  "errors": {
+    "generic": "Une erreur s'est produite",
+    "unauthorized": "Non autorisé",
+    "notFound": "Non trouvé",
+    "validation": "Erreur de validation",
+    "network": "Erreur de connexion"
+  }
+}
