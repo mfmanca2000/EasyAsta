@@ -8,9 +8,10 @@ import { League, Team, useLeague } from "@/hooks/useLeague";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Trophy, Settings, Crown, UserCheck, FileText, Gavel } from "lucide-react";
+import { Users, Trophy, Settings, Crown, UserCheck, FileText, Gavel, Bot } from "lucide-react";
 import { Link, redirect } from "@/i18n/navigation";
 import { LeagueDetailSkeleton } from "@/components/ui/league-detail-skeleton";
+import BotManagementTab from "@/components/auction/BotManagementTab";
 
 export default function LeagueDetailPage() {
   const { data: session, status } = useSession();
@@ -145,6 +146,24 @@ export default function LeagueDetailPage() {
                 );
               })()}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Configurazione Bot per Testing (solo admin e setup) */}
+      {isAdmin && league.status === "SETUP" && (
+        <Card className="mb-6 border-blue-200 bg-blue-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-700">
+              <Bot className="h-5 w-5" />
+              {t('leagues.details.testingMode')}
+            </CardTitle>
+            <CardDescription>
+              {t('leagues.details.testingModeDesc')}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <BotManagementTab leagueId={leagueId} />
           </CardContent>
         </Card>
       )}

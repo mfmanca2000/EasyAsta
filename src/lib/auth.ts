@@ -11,6 +11,11 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
   ],
+  pages: {
+    signIn: "/it",    // Redirect a homepage italiana
+    signOut: "/it",   // Redirect a homepage italiana dopo logout
+    error: "/it",     // Redirect a homepage italiana in caso di errore
+  },
   callbacks: {
     session: async ({ session, token }) => {
       if (session?.user && token.sub) {

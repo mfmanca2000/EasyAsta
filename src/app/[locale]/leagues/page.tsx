@@ -260,7 +260,7 @@ export default function LeaguesPage() {
       {/* Lista Leghe */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {leagues.map((league) => {
-          const isAdmin = league.admin.email === session?.user?.email;
+          const isAdmin = league.admin.id === session?.user?.id;
           const userTeam = league.teams.find((team) => team.user.email === session?.user?.email);
 
           return (

@@ -34,3 +34,22 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+🚀 Come Usare il Sistema dei bot:
+
+1. Accedi all'admin di una lega in stato SETUP
+2. Vai al tab "Bot Test" nel pannello admin
+3. Abilita la modalità test con il toggle
+4. Configura:
+
+
+    - Numero bot (1-7)
+    - Intelligenza (Bassa/Media/Alta)
+    - Delay selezioni (2-8 secondi)
+
+5. Durante l'asta:
+
+
+    - I bot appariranno come squadre normali
+    - Puoi triggerare le loro selezioni manualmente
+    - Vedrai lo stato di ogni bot in tempo reale

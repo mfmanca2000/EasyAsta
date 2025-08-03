@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       where: {
         id: leagueId,
         admin: {
-          email: session.user.email
+          id: session.user.id
         }
       }
     })
@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
       where: {
         id: leagueId,
         admin: {
-          email: session.user.email
+          id: session.user.id
         }
       }
     })

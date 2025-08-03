@@ -66,7 +66,7 @@ function ToastContainer({ toasts, onRemove }: { toasts: Toast[]; onRemove: (id: 
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-md">
+    <div className="fixed bottom-4 right-4 z-50 space-y-2 w-80 max-w-[90vw]">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
@@ -99,21 +99,21 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   }
 
   return (
-    <Alert variant={getVariant()} className="shadow-lg border-2 animate-in slide-in-from-right-full">
+    <Alert variant={getVariant()} className="shadow-lg border-2 animate-in slide-in-from-right-full w-full min-w-[280px]">
       <div className="flex items-start gap-2">
         {getIcon()}
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           {toast.title && (
             <div className="font-medium text-sm mb-1">{toast.title}</div>
           )}
-          <AlertDescription className="text-sm">
+          <AlertDescription className="text-sm break-words">
             {toast.description}
           </AlertDescription>
         </div>
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 w-6 p-0"
+          className="h-6 w-6 p-0 flex-shrink-0"
           onClick={() => onRemove(toast.id)}
         >
           <X className="w-3 h-3" />

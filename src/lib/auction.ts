@@ -243,18 +243,17 @@ export async function createNextRound(leagueId: string, position: 'P' | 'D' | 'C
       throw new Error('Esiste già un turno attivo')
     }
 
-    // Ottieni il numero del prossimo turno per questo ruolo
-    const lastRoundForPosition = await tx.auctionRound.findFirst({
+    // Ottieni il numero del prossimo turno globale (non per posizione)
+    const lastRound = await tx.auctionRound.findFirst({
       where: {
-        leagueId,
-        position
+        leagueId
       },
       orderBy: {
         roundNumber: 'desc'
       }
     })
 
-    const nextRoundNumber = lastRoundForPosition ? lastRoundForPosition.roundNumber + 1 : 1
+    const nextRoundNumber = lastRound ? lastRound.roundNumber + 1 : 1
 
     // Crea il nuovo turno
     const newRound = await tx.auctionRound.create({
