@@ -79,6 +79,29 @@ interface PlayerSelectedData {
   roundId: string;
 }
 
+interface AdminPlayerSelectedData {
+  selection: {
+    id: string;
+    user: { id: string; name: string };
+    player: {
+      id: string;
+      name: string;
+      position: "P" | "D" | "C" | "A";
+      realTeam: string;
+      price: number;
+    };
+  };
+  leagueId: string;
+  roundId: string;
+  isAdminAction: boolean;
+  adminReason: string;
+  targetTeam: {
+    id: string;
+    name: string;
+    userName: string;
+  };
+}
+
 interface RoundResolvedData {
   leagueId: string;
   roundId: string;
@@ -135,16 +158,69 @@ interface RoundReadyData {
   message: string;
 }
 
+interface ConflictResolutionData {
+  leagueId: string;
+  roundId: string;
+  conflicts: Array<{
+    playerId: string;
+    playerName: string;
+    price: number;
+    conflicts: Array<{
+      teamId: string;
+      teamName: string;
+      userName: string;
+      randomNumber: number;
+      isWinner: boolean;
+    }>;
+  }>;
+  roundContinues: boolean;
+  assignments: Array<{
+    playerId: string;
+    winnerId: string;
+    winnerName: string;
+    playerName: string;
+    price: number;
+    randomNumber?: number;
+  }>;
+}
+
+interface RoundContinuesData {
+  leagueId: string;
+  roundId: string;
+  teamsWithoutAssignments: Array<{
+    id: string;
+    name: string;
+  }>;
+  message: string;
+}
+
+interface AdminOverrideData {
+  leagueId: string;
+  roundId: string;
+  action: "cancel-selection" | "force-resolution" | "reset-round";
+  result: {
+    action: string;
+    message: string;
+    cancelledPlayer?: string;
+  };
+  reason: string;
+  adminName: string;
+}
+
 interface UseAuctionRealtimeProps {
   leagueId: string;
   userId?: string;
   userName?: string;
   initialState?: AuctionState | null;
   onPlayerSelected?: (data: PlayerSelectedData) => void;
+  onAdminPlayerSelected?: (data: AdminPlayerSelectedData) => void;
   onRoundResolved?: (data: RoundResolvedData) => void;
   onAuctionStarted?: (data: AuctionStartedData) => void;
   onNextRoundStarted?: (data: NextRoundStartedData) => void;
   onRoundReadyForResolution?: (data: RoundReadyData) => void;
+  onConflictResolution?: (data: ConflictResolutionData) => void;
+  onRoundContinues?: (data: RoundContinuesData) => void;
+  onAdminOverride?: (data: AdminOverrideData) => void;
   onUserJoined?: (user: { id: string; name: string }) => void;
   onUserLeft?: (user: { id: string; name: string }) => void;
   onUserDisconnected?: (user: { id: string; name: string; reason: string }) => void;
@@ -157,10 +233,14 @@ export function useAuctionRealtime({
   userName,
   initialState = null,
   onPlayerSelected,
+  onAdminPlayerSelected,
   onRoundResolved,
   onAuctionStarted,
   onNextRoundStarted,
   onRoundReadyForResolution,
+  onConflictResolution,
+  onRoundContinues,
+  onAdminOverride,
   onUserJoined,
   onUserLeft,
   onUserDisconnected,
@@ -199,9 +279,20 @@ export function useAuctionRealtime({
 
     // Player selection event
     const handlePlayerSelected = (data: PlayerSelectedData) => {
-      console.log("Player selected:", data);
+      console.log("[CLIENT] Player selected received:", data);
+      console.log("[CLIENT] Calling refreshAuctionState...");
       refreshAuctionState();
+      console.log("[CLIENT] Calling onPlayerSelected callback...");
       onPlayerSelected?.(data);
+    };
+
+    // Admin player selection event
+    const handleAdminPlayerSelected = (data: AdminPlayerSelectedData) => {
+      console.log("[CLIENT] Admin player selected received:", data);
+      console.log("[CLIENT] Calling refreshAuctionState...");
+      refreshAuctionState();
+      console.log("[CLIENT] Calling onAdminPlayerSelected callback...");
+      onAdminPlayerSelected?.(data);
     };
 
     // Round ready for resolution
@@ -216,6 +307,20 @@ export function useAuctionRealtime({
       console.log("Round resolved:", data);
       refreshAuctionState();
       onRoundResolved?.(data);
+    };
+
+    // Conflict resolution event
+    const handleConflictResolution = (data: ConflictResolutionData) => {
+      console.log("Conflict resolution:", data);
+      refreshAuctionState();
+      onConflictResolution?.(data);
+    };
+
+    // Round continues event
+    const handleRoundContinues = (data: RoundContinuesData) => {
+      console.log("Round continues:", data);
+      refreshAuctionState();
+      onRoundContinues?.(data);
     };
 
     // Auction started event
@@ -262,12 +367,36 @@ export function useAuctionRealtime({
       setConnectedUsers(users);
     };
 
+    // Admin override event - special handling for round-reset
+    const handleAdminOverride = (data: AdminOverrideData) => {
+      console.log("Admin override:", data);
+      
+      // For round-reset, we need to refresh state completely since the round might be deleted
+      if (data.action === "reset-round") {
+        // Clear current state and refresh
+        setAuctionState(null);
+        // Refresh after a small delay to ensure database transaction is complete
+        setTimeout(() => {
+          refreshAuctionState();
+        }, 500);
+      } else {
+        // For other actions, just refresh normally
+        refreshAuctionState();
+      }
+      
+      onAdminOverride?.(data);
+    };
+
     // Register event listeners
     on("player-selected", handlePlayerSelected);
+    on("admin-player-selected", handleAdminPlayerSelected);
     on("round-ready-for-resolution", handleRoundReadyForResolution);
     on("round-resolved", handleRoundResolved);
+    on("conflict-resolution", handleConflictResolution);
+    on("round-continues", handleRoundContinues);
     on("auction-started", handleAuctionStarted);
     on("next-round-started", handleNextRoundStarted);
+    on("admin-override", handleAdminOverride);
     on("user-joined", handleUserJoined);
     on("user-left", handleUserLeft);
     on("user-disconnected", handleUserDisconnected);
@@ -277,10 +406,14 @@ export function useAuctionRealtime({
     // Cleanup event listeners on unmount
     return () => {
       off("player-selected", handlePlayerSelected);
+      off("admin-player-selected", handleAdminPlayerSelected);
       off("round-ready-for-resolution", handleRoundReadyForResolution);
       off("round-resolved", handleRoundResolved);
+      off("conflict-resolution", handleConflictResolution);
+      off("round-continues", handleRoundContinues);
       off("auction-started", handleAuctionStarted);
       off("next-round-started", handleNextRoundStarted);
+      off("admin-override", handleAdminOverride);
       off("user-joined", handleUserJoined);
       off("user-left", handleUserLeft);
       off("user-disconnected", handleUserDisconnected);
@@ -294,10 +427,14 @@ export function useAuctionRealtime({
     off,
     refreshAuctionState,
     onPlayerSelected,
+    onAdminPlayerSelected,
     onRoundResolved,
     onAuctionStarted,
     onNextRoundStarted,
     onRoundReadyForResolution,
+    onConflictResolution,
+    onRoundContinues,
+    onAdminOverride,
     onUserJoined,
     onUserLeft,
     onUserDisconnected,

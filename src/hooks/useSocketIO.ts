@@ -53,6 +53,34 @@ interface AuctionEvents {
     leagueId: string
     roundId: string 
   }) => void
+  'admin-player-selected': (data: {
+    selection: {
+      id: string
+      user: { id: string; name: string }
+      player: Player
+    }
+    leagueId: string
+    roundId: string
+    isAdminAction: boolean
+    adminReason: string
+    targetTeam: {
+      id: string
+      name: string
+      userName: string
+    }
+  }) => void
+  'admin-override': (data: {
+    leagueId: string
+    roundId: string
+    action: 'cancel-selection' | 'force-resolution' | 'reset-round'
+    result: {
+      action: string
+      message: string
+      cancelledPlayer?: string
+    }
+    reason: string
+    adminName: string
+  }) => void
   'round-ready-for-resolution': (data: { leagueId: string; roundId: string; message: string }) => void
   'round-resolved': (data: { 
     leagueId: string
@@ -77,6 +105,40 @@ interface AuctionEvents {
   'user-disconnected': (user: { id: string; name: string; socketId: string; reason: string }) => void
   'user-timeout': (user: { id: string; name: string; socketId: string }) => void
   'users-online': (users: Array<{ id: string; name: string }>) => void
+  'conflict-resolution': (data: {
+    leagueId: string
+    roundId: string
+    conflicts: Array<{
+      playerId: string
+      playerName: string
+      price: number
+      conflicts: Array<{
+        teamId: string
+        teamName: string
+        userName: string
+        randomNumber: number
+        isWinner: boolean
+      }>
+    }>
+    roundContinues: boolean
+    assignments: Array<{
+      playerId: string
+      winnerId: string
+      winnerName: string
+      playerName: string
+      price: number
+      randomNumber?: number
+    }>
+  }) => void
+  'round-continues': (data: {
+    leagueId: string
+    roundId: string
+    teamsWithoutAssignments: Array<{
+      id: string
+      name: string
+    }>
+    message: string
+  }) => void
   'error': (error: Error) => void
 }
 
@@ -116,7 +178,8 @@ export function useSocketIO({ leagueId, userId, userName, enabled = true }: UseS
           userId,
           userName
         })
-        console.log(`Joined auction room: auction-${leagueId}`)
+        console.log(`[SOCKET] Joined auction room: auction-${leagueId}`)
+        console.log(`[SOCKET] User: ${userName} (${userId})`)
       }
 
       // Start heartbeat

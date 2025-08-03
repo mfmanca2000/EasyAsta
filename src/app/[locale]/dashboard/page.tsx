@@ -66,31 +66,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      <div className="mt-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("dashboard.nextSteps")}</CardTitle>
-            <CardDescription>{t("dashboard.nextStepsDescription")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm">{t("dashboard.stepJoinCreate")}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-muted rounded-full"></div>
-                <span className="text-sm">{t("dashboard.stepConfigureTeam")}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 bg-muted rounded-full"></div>
-                <span className="text-sm">{t("dashboard.stepParticipateAuctions")}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

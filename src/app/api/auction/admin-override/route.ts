@@ -10,6 +10,7 @@ interface GlobalSocket {
 }
 
 declare const globalThis: GlobalSocket & typeof global
+declare const global: GlobalSocket
 
 const adminOverrideSchema = z.object({
   roundId: z.string().cuid(),
@@ -179,18 +180,15 @@ export async function POST(request: NextRequest) {
 
       case 'reset-round':
         await prisma.$transaction(async (tx) => {
-          // Rimuovi tutte le selezioni del turno
-          await tx.playerSelection.deleteMany({
-            where: { roundId }
+          // Trova il turno precedente per reimpostarlo come COMPLETED
+          const previousRound = await tx.auctionRound.findFirst({
+            where: {
+              leagueId: round.leagueId,
+              roundNumber: round.roundNumber - 1
+            }
           })
 
-          // Reimposta stato turno a SELECTION
-          await tx.auctionRound.update({
-            where: { id: roundId },
-            data: { status: 'SELECTION' }
-          })
-
-          // Log dell'azione admin
+          // Log dell'azione admin PRIMA di eliminare il turno
           await tx.adminAction.create({
             data: {
               leagueId: round.leagueId,
@@ -200,22 +198,45 @@ export async function POST(request: NextRequest) {
               reason,
               metadata: {
                 deletedSelectionsCount: round.selections.length,
-                resetToSelection: true
+                deletedRound: true,
+                roundNumber: round.roundNumber,
+                position: round.position,
+                previousRoundRestored: !!previousRound,
+                previousRoundId: previousRound?.id
               }
             }
           })
+
+          // Rimuovi tutte le selezioni del turno corrente
+          await tx.playerSelection.deleteMany({
+            where: { roundId }
+          })
+
+          // Elimina completamente il turno corrente
+          await tx.auctionRound.delete({
+            where: { id: roundId }
+          })
+
+          // Se esiste un turno precedente, reimpostalo come COMPLETED
+          if (previousRound) {
+            await tx.auctionRound.update({
+              where: { id: previousRound.id },
+              data: { status: 'COMPLETED' }
+            })
+          }
         })
 
         result = {
           action: 'round-reset',
-          message: `Turno resettato. ${round.selections.length} selezioni rimosse.`
+          message: `Turno ${round.roundNumber} (${round.position}) eliminato completamente. ${round.selections.length} selezioni rimosse. Ritorno alla scelta del ruolo.`
         }
         break
     }
 
     // Emetti evento Socket.io per notificare l'override admin
-    if (globalThis.io) {
-      globalThis.io.to(`auction-${round.leagueId}`).emit('admin-override', {
+    const io = globalThis.io || global.io
+    if (io) {
+      io.to(`auction-${round.leagueId}`).emit('admin-override', {
         leagueId: round.leagueId,
         roundId,
         action,

@@ -2,14 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { emitToAuctionRoom } from '@/lib/socket-utils'
 import { z } from 'zod'
-
-// Get global Socket.io instance
-interface GlobalSocket {
-  io?: import('socket.io').Server
-}
-
-declare const globalThis: GlobalSocket & typeof global
 
 const adminSelectSchema = z.object({
   roundId: z.string().cuid(),
@@ -153,21 +147,26 @@ export async function POST(request: NextRequest) {
       return selection
     })
 
-    // Emetti evento Socket.io per notificare la selezione admin
-    if (globalThis.io) {
-      globalThis.io.to(`auction-${round.leagueId}`).emit('admin-player-selected', {
-        selection: result,
-        leagueId: round.leagueId,
-        roundId,
-        isAdminAction: true,
-        adminReason: reason || 'Selezione effettuata dall\'admin',
-        targetTeam: {
-          id: targetTeam.id,
-          name: targetTeam.name,
-          userName: targetTeam.user.name
-        }
-      })
-    }
+    // Emitti eventi Socket.io per notificare la selezione admin
+    emitToAuctionRoom(round.leagueId, 'admin-player-selected', {
+      selection: result,
+      leagueId: round.leagueId,
+      roundId,
+      isAdminAction: true,
+      adminReason: reason || 'Selezione effettuata dall\'admin',
+      targetTeam: {
+        id: targetTeam.id,
+        name: targetTeam.name,
+        userName: targetTeam.user.name
+      }
+    })
+    
+    // Also emit the regular player-selected event for compatibility
+    emitToAuctionRoom(round.leagueId, 'player-selected', {
+      selection: result,
+      leagueId: round.leagueId,
+      roundId
+    })
 
     // Controlla se tutti hanno selezionato
     const allSelections = await prisma.playerSelection.findMany({
@@ -186,13 +185,11 @@ export async function POST(request: NextRequest) {
       })
 
       // Emetti evento Socket.io per notificare che il turno è pronto per risoluzione
-      if (globalThis.io) {
-        globalThis.io.to(`auction-${round.leagueId}`).emit('round-ready-for-resolution', {
-          leagueId: round.leagueId,
-          roundId,
-          message: 'Turno completato con selezione admin, pronto per risoluzione'
-        })
-      }
+      emitToAuctionRoom(round.leagueId, 'round-ready-for-resolution', {
+        leagueId: round.leagueId,
+        roundId,
+        message: 'Turno completato con selezione admin, pronto per risoluzione'
+      })
 
       return NextResponse.json({
         selection: result,

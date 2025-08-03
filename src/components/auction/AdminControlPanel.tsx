@@ -185,6 +185,11 @@ export default function AdminControlPanel({ leagueId, currentRound, teams, avail
       toast.error(t("admin.reasonRequired"));
       return;
     }
+    
+    if (overrideReason.trim().length < 5) {
+      toast.error(t("admin.reasonTooShort"));
+      return;
+    }
 
     const actionData: { reason: string; targetTeamId?: string } = { reason: overrideReason };
     if (overrideAction === "cancel-selection" && !overrideTeam) {
@@ -366,6 +371,11 @@ export default function AdminControlPanel({ leagueId, currentRound, teams, avail
                   <SelectItem value="reset-round">{t("admin.actions.resetRound")}</SelectItem>
                 </SelectContent>
               </Select>
+              {overrideAction && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  {t(`admin.descriptions.${overrideAction}`)}
+                </p>
+              )}
             </div>
 
             {overrideAction === "cancel-selection" && (
@@ -397,7 +407,7 @@ export default function AdminControlPanel({ leagueId, currentRound, teams, avail
               <Textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} placeholder={t("admin.overrideReasonPlaceholder")} rows={2} required />
             </div>
 
-            <Button onClick={handleOverride} disabled={loading || !overrideReason.trim()} variant="destructive" className="w-full">
+            <Button onClick={handleOverride} disabled={loading || !overrideReason.trim() || overrideReason.trim().length < 5} variant="destructive" className="w-full">
               {loading ? t("loading") : t("admin.executeOverride")}
             </Button>
           </CardContent>

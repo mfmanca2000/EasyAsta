@@ -62,15 +62,37 @@ export async function POST(request: NextRequest) {
 
     const result = await resolveRound(roundId)
     
-    // Emetti evento Socket.io per notificare che il turno è stato risolto
+    // Emetti eventi Socket.io appropriati
     if (globalThis.io) {
-      globalThis.io.to(`auction-${round.league.id}`).emit('round-resolved', {
-        leagueId: round.league.id,
-        roundId,
-        result,
-        assignments: result.assignments,
-        canContinue: result.canContinue
-      })
+      // Se ci sono conflitti, emetti evento per mostrare il modal
+      if (result.conflicts && result.conflicts.length > 0) {
+        globalThis.io.to(`auction-${round.league.id}`).emit('conflict-resolution', {
+          leagueId: round.league.id,
+          roundId,
+          conflicts: result.conflicts,
+          roundContinues: result.roundContinues,
+          assignments: result.assignments
+        })
+      }
+
+      // Se il turno continua, emetti evento apposito
+      if (result.roundContinues) {
+        globalThis.io.to(`auction-${round.league.id}`).emit('round-continues', {
+          leagueId: round.league.id,
+          roundId,
+          teamsWithoutAssignments: result.teamsWithoutAssignments,
+          message: result.message
+        })
+      } else {
+        // Turno completato normalmente
+        globalThis.io.to(`auction-${round.league.id}`).emit('round-resolved', {
+          leagueId: round.league.id,
+          roundId,
+          result,
+          assignments: result.assignments,
+          canContinue: result.canContinue
+        })
+      }
     }
     
     return NextResponse.json(result)

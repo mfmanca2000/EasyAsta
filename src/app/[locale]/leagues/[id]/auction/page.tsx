@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Users, Clock, Trophy, Coins } from "lucide-react";
 import AdminControlPanel from "@/components/auction/AdminControlPanel";
+import ConflictResolutionModal from "@/components/auction/ConflictResolutionModal";
 
 interface NextRoundStats {
   teamStats: Array<{
@@ -24,6 +25,32 @@ interface NextRoundStats {
   globalNeeds: { P: number; D: number; C: number; A: number };
   availableByPosition: { P: number; D: number; C: number; A: number };
   recommendations: { P: boolean; D: boolean; C: boolean; A: boolean };
+}
+
+interface ConflictData {
+  leagueId: string;
+  roundId: string;
+  conflicts: Array<{
+    playerId: string;
+    playerName: string;
+    price: number;
+    conflicts: Array<{
+      teamId: string;
+      teamName: string;
+      userName: string;
+      randomNumber: number;
+      isWinner: boolean;
+    }>;
+  }>;
+  roundContinues: boolean;
+  assignments: Array<{
+    playerId: string;
+    winnerId: string;
+    winnerName: string;
+    playerName: string;
+    price: number;
+    randomNumber?: number;
+  }>;
 }
 
 // Position names will be handled by translations
@@ -40,6 +67,8 @@ export default function AuctionPage() {
   const [nextRoundStats, setNextRoundStats] = useState<NextRoundStats | null>(null);
   const [showNextRoundModal, setShowNextRoundModal] = useState(false);
   const [teamCount, setTeamCount] = useState(0);
+  const [showConflictModal, setShowConflictModal] = useState(false);
+  const [conflictData, setConflictData] = useState<ConflictData | null>(null);
 
   const leagueId = params.id as string;
   const { addToast } = useToast();
@@ -57,6 +86,16 @@ export default function AuctionPage() {
         title: t("auction.playerSelectedToast"),
         description: `${selection.user.name} → ${selection.player.name}`,
         duration: 3000,
+      });
+    },
+    onAdminPlayerSelected: (data) => {
+      console.log("Admin player selected in real-time:", data);
+      const { selection, targetTeam, adminReason } = data;
+      addToast({
+        type: "info",
+        title: t("auction.adminPlayerSelectedToast"),
+        description: `Admin → ${selection.player.name} per ${targetTeam.name}`,
+        duration: 4000,
       });
     },
     onRoundResolved: (data) => {
@@ -98,7 +137,7 @@ export default function AuctionPage() {
         type: "warning",
         title: t("auction.roundReadyToast"),
         description: t("auction.roundReadyDescription"),
-        duration: 0, // Keep until manually dismissed
+        duration: 6000, // Auto close after 6 seconds
       });
     },
     onUserJoined: (user) => {
@@ -127,6 +166,20 @@ export default function AuctionPage() {
         duration: 4000,
       });
     },
+    onConflictResolution: (data) => {
+      console.log("Conflict resolution:", data);
+      setConflictData(data);
+      setShowConflictModal(true);
+    },
+    onRoundContinues: (data) => {
+      console.log("Round continues:", data);
+      addToast({
+        type: "info",
+        title: t("auction.roundContinues"),
+        description: data.message,
+        duration: 4000,
+      });
+    },
   });
 
   const checkIfAdmin = useCallback(async () => {
@@ -151,28 +204,6 @@ export default function AuctionPage() {
     }
   }, [session, leagueId, checkIfAdmin]);
 
-  const startAuction = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch("/api/auction", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leagueId }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || t("errors.startAuctionError"));
-      }
-
-      await refreshAuctionState();
-    } catch (error) {
-      setError(error instanceof Error ? error.message : t("errors.startAuctionError"));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const selectPlayer = async (playerId: string) => {
     if (!auctionState?.currentRound || isSelecting) return;
@@ -252,6 +283,32 @@ export default function AuctionPage() {
   const startNextRound = async (position: "P" | "D" | "C" | "A") => {
     try {
       setLoading(true);
+      
+      // First, check if we need to start the auction (if league is still in SETUP)
+      // We need to check the current league status
+      const leagueResponse = await fetch(`/api/leagues/${leagueId}`);
+      const leagueData = await leagueResponse.json();
+      
+      if (!leagueResponse.ok) {
+        throw new Error(leagueData.error || t("errors.loadLeagueError"));
+      }
+      
+      // If league is in SETUP, we need to start the auction first
+      if (leagueData.league.status === "SETUP") {
+        const startResponse = await fetch("/api/auction", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leagueId }),
+        });
+
+        const startData = await startResponse.json();
+
+        if (!startResponse.ok) {
+          throw new Error(startData.error || t("errors.startAuctionError"));
+        }
+      }
+      
+      // Now create the round
       const response = await fetch("/api/auction/next-round", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -304,128 +361,152 @@ export default function AuctionPage() {
               <Trophy className="w-5 h-5" />
               {t("auction.title")}
             </CardTitle>
-            <CardDescription>
-              {auctionState ? t("auction.noActiveRound") : t("auction.notStarted")}
-              {/* Debug: hasActiveRound={auctionState?.hasActiveRound ? 'YES' : 'NO'} */}
-            </CardDescription>
+            <CardDescription>{t("auction.noActiveRound")}</CardDescription>
           </CardHeader>
           <CardContent>
             {isAdmin ? (
-              <div className="space-y-4">
-                {(!auctionState || !auctionState.hasActiveRound) ? (
-                  <>
-                    {teamCount < 4 && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-800">{t("auction.insufficientTeams", { count: teamCount })}</p>
-                      </div>
-                    )}
-                    <Button 
-                      onClick={startAuction}
-                      disabled={loading || teamCount < 4}
-                    >
-                      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      {t("auction.startAuction")}
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    {teamCount < 4 && (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-sm text-yellow-800">{t("auction.insufficientTeamsContinue", { count: teamCount })}</p>
-                      </div>
-                    )}
-                    <p className="text-muted-foreground mb-4">{t("auction.roundCompleted")}</p>
-                    <div className="space-y-2">
-                      <Button
-                        onClick={async () => {
-                          try {
-                            await fetchNextRoundStats();
-                            setShowNextRoundModal(true);
-                          } catch (error) {
-                            console.error("Error in next round flow:", error);
-                          }
-                        }}
-                        disabled={loading || teamCount < 4}
-                      >
-                        {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        {t("auction.startNextRound")}
-                      </Button>
+              <div className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-bold text-sm">+</span>
                     </div>
-                  </>
-                )}
-                
-                {/* Bottone Reset sempre visibile per l'admin */}
-                <div className="pt-4 border-t border-gray-200">
+                    <h3 className="font-semibold text-lg">{t("auction.continueAuction")}</h3>
+                  </div>
+
+                  {teamCount < 4 && (
+                    <Alert>
+                      <AlertDescription>{t("auction.insufficientTeams", { count: teamCount })}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <p className="text-muted-foreground text-sm">{t("auction.chooseNextRoleTooltip")}</p>
+
                   <Button
-                    variant="destructive"
-                    size="sm"
                     onClick={async () => {
-                      if (confirm("Sei sicuro di voler resettare completamente l'asta? Questa azione non può essere annullata.")) {
-                        try {
-                          setLoading(true);
-                          const response = await fetch("/api/auction/reset", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ leagueId }),
-                          });
-                          
-                          if (response.ok) {
-                            alert("Asta resettata con successo!");
-                            window.location.reload();
-                          } else {
-                            const data = await response.json();
-                            alert("Errore: " + data.error);
-                          }
-                        } catch (error) {
-                          alert("Errore durante il reset: " + error);
-                        } finally {
-                          setLoading(false);
-                        }
+                      try {
+                        await fetchNextRoundStats();
+                        setShowNextRoundModal(true);
+                      } catch (error) {
+                        console.error("Error in next round flow:", error);
                       }
                     }}
-                    disabled={loading}
+                    disabled={loading || teamCount < 4}
+                    size="lg"
                     className="w-full"
                   >
-                    🗑️ Reset Asta Completo
+                    {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    <Trophy className="w-4 h-4 mr-2" />
+                    {t("auction.startNextRound")}
                   </Button>
                 </div>
+
+                {/* Sezione Reset - Solo se asta già iniziata */}
+                {
+                  <div className="pt-4 border-t border-gray-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                        <span className="text-red-600 font-bold text-xs">!</span>
+                      </div>
+                      <h4 className="font-medium text-sm text-red-700">{t("auction.dangerZone")}</h4>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        if (confirm(t("auction.resetConfirmation"))) {
+                          try {
+                            setLoading(true);
+                            const response = await fetch("/api/auction/reset", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ leagueId }),
+                            });
+
+                            if (response.ok) {
+                              addToast({
+                                type: "success",
+                                title: t("auction.resetSuccess"),
+                                description: t("auction.reloadingPage"),
+                                duration: 2000,
+                              });
+                              setTimeout(() => window.location.reload(), 2000);
+                            } else {
+                              const data = await response.json();
+                              addToast({
+                                type: "error",
+                                title: t("errors.resetError"),
+                                description: data.error,
+                                duration: 5000,
+                              });
+                            }
+                          } catch (error) {
+                            addToast({
+                              type: "error",
+                              title: t("errors.resetError"),
+                              description: error instanceof Error ? error.message : t("errors.genericError"),
+                              duration: 5000,
+                            });
+                          } finally {
+                            setLoading(false);
+                          }
+                        }
+                      }}
+                      disabled={loading}
+                      className="w-full"
+                    >
+                      🗑️ {t("auction.resetComplete")}
+                    </Button>
+                  </div>
+                }
               </div>
             ) : (
-              <p className="text-muted-foreground">{t("auction.waitForAdmin", { action: auctionState ? t("auction.startNextRoundAction") : t("auction.startAuctionAction") })}</p>
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-muted-foreground">
+                  {t("auction.waitForAdmin", {
+                    action: t("auction.startNextRoundAction"),
+                  })}
+                </p>
+              </div>
             )}
           </CardContent>
         </Card>
 
         {/* Modal Scelta Prossimo Ruolo */}
         <Dialog open={showNextRoundModal} onOpenChange={setShowNextRoundModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-full max-w-none md:max-w-[800px] max-h-[95vh] overflow-y-auto p-6">
             <DialogHeader>
               <DialogTitle>{t("auction.chooseNextRole")}</DialogTitle>
               <DialogDescription>{t("auction.chooseNextRoleDescription")}</DialogDescription>
             </DialogHeader>
 
             {nextRoundStats && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                   {(["P", "D", "C", "A"] as const).map((position) => {
                     const positionName = t(`auction.positions.${position}`);
                     const isRecommended = nextRoundStats.recommendations[position];
 
                     return (
                       <Card key={position} className={`cursor-pointer transition-colors ${isRecommended ? "ring-2 ring-green-500" : ""}`}>
-                        <CardContent className="p-6 text-center">
-                          <div className="space-y-3">
-                            <Badge variant={isRecommended ? "default" : "outline"} className="text-lg px-3 py-1">{position}</Badge>
-                            <h3 className="font-medium text-base">{positionName}</h3>
-                            <div className="text-sm text-muted-foreground space-y-1">
+                        <CardContent className="p-8 text-center">
+                          <div className="space-y-4">
+                            <Badge variant={isRecommended ? "default" : "outline"} className="text-lg px-4 py-1.5">
+                              {position}
+                            </Badge>
+                            <h3 className="font-medium text-lg">{positionName}</h3>
+                            <div className="text-sm text-muted-foreground space-y-1.5">
                               <div>{t("auction.needed", { count: nextRoundStats.globalNeeds[position] })}</div>
                               <div>{t("auction.availableCount", { count: nextRoundStats.availableByPosition[position] })}</div>
                             </div>
-                            <Button 
-                              size="default" 
-                              variant={isRecommended ? "default" : "outline"} 
-                              disabled={!isRecommended || loading} 
-                              onClick={() => startNextRound(position)} 
+                            <Button
+                              size="default"
+                              variant={isRecommended ? "default" : "outline"}
+                              disabled={!isRecommended || loading}
+                              onClick={() => startNextRound(position)}
                               className="w-full h-auto py-3 px-4 text-sm whitespace-normal"
                             >
                               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
@@ -438,14 +519,14 @@ export default function AuctionPage() {
                   })}
                 </div>
 
-                {/* Dettaglio squadre */}
-                <div className="mt-6">
-                  <h4 className="font-medium mb-3">{t("auction.teamsSituation")}</h4>
-                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                {/* Team details */}
+                <div className="mt-8">
+                  <h4 className="font-medium mb-4 text-lg">{t("auction.teamsSituation")}</h4>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                     {nextRoundStats.teamStats.map((team, index: number) => (
-                      <div key={index} className="flex items-center justify-between text-sm p-2 border rounded">
+                      <div key={index} className="flex items-center justify-between text-sm p-3 border rounded">
                         <span className="font-medium">{team.teamName}</span>
-                        <div className="flex gap-2 text-xs">
+                        <div className="flex gap-3 text-xs">
                           {(["P", "D", "C", "A"] as const).map((pos) => (
                             <span key={pos} className={team.needs[pos] > 0 ? "text-orange-600 font-medium" : "text-green-600"}>
                               {pos}: {team.composition[pos]}/{pos === "P" ? 3 : pos === "A" ? 6 : 8}
@@ -608,7 +689,6 @@ export default function AuctionPage() {
         </Card>
       )}
 
-
       {/* Pannello Controllo Admin Avanzato */}
       {isAdmin && auctionState && (
         <AdminControlPanel
@@ -621,6 +701,19 @@ export default function AuctionPage() {
         />
       )}
 
+      {/* Modal Risoluzione Conflitti */}
+      <ConflictResolutionModal
+        open={showConflictModal}
+        onOpenChange={(open) => {
+          setShowConflictModal(open);
+          // Refresh auction state when modal closes
+          if (!open) {
+            refreshAuctionState();
+          }
+        }}
+        conflicts={conflictData?.conflicts || []}
+        roundContinues={conflictData?.roundContinues || false}
+      />
     </div>
   );
 }
