@@ -2,16 +2,17 @@
 
 import { useSession } from "next-auth/react";
 import { redirect } from "@/i18n/navigation";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const locale = useLocale();
+  const t = useTranslations();
 
   if (status === "loading") {
-    return <div className="text-center">Caricamento...</div>;
+    return <div className="text-center">{t("common.loading")}</div>;
   }
 
   if (!session) {
@@ -21,46 +22,46 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-muted-foreground">Benvenuto, {session?.user?.name}</p>
+        <h1 className="text-3xl font-bold mb-2">{t("dashboard.title")}</h1>
+        <p className="text-muted-foreground">{t("dashboard.welcome", { name: session?.user?.name as string })}</p>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Le Mie Leghe</CardTitle>
-            <CardDescription>Leghe a cui partecipi</CardDescription>
+            <CardTitle>{t("dashboard.myLeagues")}</CardTitle>
+            <CardDescription>{t("dashboard.leaguesDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Nessuna lega trovata</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noLeagueFound")}</p>
             <Button variant="outline" className="w-full">
-              Unisciti a una Lega
+              {t("dashboard.joinLeague")}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Le Mie Squadre</CardTitle>
-            <CardDescription>Gestisci le tue rose</CardDescription>
+            <CardTitle>{t("dashboard.myTeams")}</CardTitle>
+            <CardDescription>{t("dashboard.teamsDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Nessuna squadra trovata</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noTeamFound")}</p>
             <Button variant="outline" className="w-full">
-              Visualizza Rose
+              {t("dashboard.viewRosters")}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Aste Attive</CardTitle>
-            <CardDescription>Partecipa alle aste in corso</CardDescription>
+            <CardTitle>{t("dashboard.activeAuctions")}</CardTitle>
+            <CardDescription>{t("dashboard.auctionsDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">Nessuna asta attiva</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noActiveAuction")}</p>
             <Button variant="outline" className="w-full">
-              Cerca Aste
+              {t("dashboard.searchAuctions")}
             </Button>
           </CardContent>
         </Card>
@@ -69,22 +70,22 @@ export default function Dashboard() {
       <div className="mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Prossimi Passi</CardTitle>
-            <CardDescription>Inizia subito a usare EasyAsta</CardDescription>
+            <CardTitle>{t("dashboard.nextSteps")}</CardTitle>
+            <CardDescription>{t("dashboard.nextStepsDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-primary rounded-full"></div>
-                <span className="text-sm">Unisciti a una lega esistente o creane una nuova</span>
+                <span className="text-sm">{t("dashboard.stepJoinCreate")}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-muted rounded-full"></div>
-                <span className="text-sm">Configura la tua squadra</span>
+                <span className="text-sm">{t("dashboard.stepConfigureTeam")}</span>
               </div>
               <div className="flex items-center gap-3">
                 <div className="w-2 h-2 bg-muted rounded-full"></div>
-                <span className="text-sm">Partecipa alle aste</span>
+                <span className="text-sm">{t("dashboard.stepParticipateAuctions")}</span>
               </div>
             </div>
           </CardContent>

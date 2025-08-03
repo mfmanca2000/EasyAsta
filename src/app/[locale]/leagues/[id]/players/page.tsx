@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { redirect } from "@/i18n/navigation";
 import { usePlayers, Player } from "@/hooks/usePlayers";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export default function PlayersPage() {
   const params = useParams();
   const leagueId = params.id as string;
   const locale = params.locale as string;
+  const t = useTranslations();
 
   const [league, setLeague] = useState<League | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -53,9 +55,9 @@ export default function PlayersPage() {
         setLeague(data.league);
       }
     } catch (error) {
-      console.error("Errore caricamento lega:", error);
+      console.error(t('errors.loadingLeague'), error);
     }
-  }, [leagueId]);
+  }, [leagueId, t]);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -100,7 +102,7 @@ export default function PlayersPage() {
       const result = await importPlayers(file);
 
       if (result.success) {
-        alert(`Importazione completata! ${result.data.count} calciatori importati.`);
+        alert(`${t('common.success')}! ${result.data.count} ${t('navigation.players')} ${t('players.import')}.`);
         setShowImportForm(false);
         form.reset();
       } else {
@@ -108,32 +110,32 @@ export default function PlayersPage() {
           const proceed = confirm(`Attenzione:\n${result.details?.join("\n") || ""}\n\nVuoi procedere comunque?`);
           if (!proceed) return;
         } else {
-          alert(`Errore: ${result.error}\n${result.details?.join("\n") || ""}`);
+          alert(`${t('common.error')}: ${result.error}\n${result.details?.join("\n") || ""}`);
         }
       }
     } catch (error) {
-      console.error("Errore upload:", error);
-      alert("Errore durante l'upload del file");
+      console.error(t('errors.uploadError'), error);
+      alert(t('errors.uploadError'));
     } finally {
       setUploading(false);
     }
   };
 
   const handleDeletePlayer = async (playerId: string, playerName: string) => {
-    if (!confirm(`Sei sicuro di voler eliminare ${playerName}?`)) {
+    if (!confirm(t('errors.deleteConfirm', { name: playerName }))) {
       return;
     }
 
     try {
       const result = await deletePlayer(playerId);
       if (result.success) {
-        alert("Calciatore eliminato con successo");
+        alert(t('errors.deleteSuccess'));
       } else {
-        alert(`Errore: ${result.error}`);
+        alert(`${t('common.error')}: ${result.error}`);
       }
     } catch (error) {
-      console.error("Errore eliminazione:", error);
-      alert("Errore durante l'eliminazione");
+      console.error(t('errors.deleteError'), error);
+      alert(t('errors.deleteError'));
     }
   };
 
@@ -160,10 +162,10 @@ export default function PlayersPage() {
     } as const;
 
     const labels = {
-      P: "Portiere",
-      D: "Difensore",
-      C: "Centrocampista",
-      A: "Attaccante",
+      P: t('players.positionLabels.P'),
+      D: t('players.positionLabels.D'),
+      C: t('players.positionLabels.C'),
+      A: t('players.positionLabels.A'),
     };
 
     return (
@@ -183,13 +185,13 @@ export default function PlayersPage() {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Calciatori - {league.name}</h1>
-          <p className="text-muted-foreground">{isAdmin ? "Gestisci i calciatori della tua lega" : "Visualizza i calciatori disponibili"}</p>
+          <h1 className="text-3xl font-bold">{t('players.playersTitle', { leagueName: league.name })}</h1>
+          <p className="text-muted-foreground">{isAdmin ? t('players.adminDescription') : t('players.playerDescription')}</p>
         </div>
         {isAdmin && league.status === "SETUP" && (
           <Button onClick={() => setShowImportForm(true)}>
             <Upload className="mr-2 h-4 w-4" />
-            Importa Excel
+            {t('players.importExcel')}
           </Button>
         )}
       </div>
@@ -202,7 +204,7 @@ export default function PlayersPage() {
         >
           <CardContent className="p-4">
             <div className={`text-2xl font-bold ${positionFilter === "P" ? "text-green-800" : ""}`}>{stats.P || 0}</div>
-            <div className={`text-sm ${positionFilter === "P" ? "text-green-700" : "text-muted-foreground"}`}>Portieri</div>
+            <div className={`text-sm ${positionFilter === "P" ? "text-green-700" : "text-muted-foreground"}`}>{t('players.goalkeepers')}</div>
             {positionFilter === "P" && <div className="text-xs text-green-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
@@ -212,7 +214,7 @@ export default function PlayersPage() {
         >
           <CardContent className="p-4">
             <div className={`text-2xl font-bold ${positionFilter === "D" ? "text-blue-800" : ""}`}>{stats.D || 0}</div>
-            <div className={`text-sm ${positionFilter === "D" ? "text-blue-700" : "text-muted-foreground"}`}>Difensori</div>
+            <div className={`text-sm ${positionFilter === "D" ? "text-blue-700" : "text-muted-foreground"}`}>{t('players.defenders')}</div>
             {positionFilter === "D" && <div className="text-xs text-blue-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
@@ -222,7 +224,7 @@ export default function PlayersPage() {
         >
           <CardContent className="p-4">
             <div className={`text-2xl font-bold ${positionFilter === "C" ? "text-yellow-800" : ""}`}>{stats.C || 0}</div>
-            <div className={`text-sm ${positionFilter === "C" ? "text-yellow-700" : "text-muted-foreground"}`}>Centrocampisti</div>
+            <div className={`text-sm ${positionFilter === "C" ? "text-yellow-700" : "text-muted-foreground"}`}>{t('players.midfielders')}</div>
             {positionFilter === "C" && <div className="text-xs text-yellow-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
@@ -232,7 +234,7 @@ export default function PlayersPage() {
         >
           <CardContent className="p-4">
             <div className={`text-2xl font-bold ${positionFilter === "A" ? "text-red-800" : ""}`}>{stats.A || 0}</div>
-            <div className={`text-sm ${positionFilter === "A" ? "text-red-700" : "text-muted-foreground"}`}>Attaccanti</div>
+            <div className={`text-sm ${positionFilter === "A" ? "text-red-700" : "text-muted-foreground"}`}>{t('players.forwards')}</div>
             {positionFilter === "A" && <div className="text-xs text-red-700 font-medium mt-1">Filtro attivo</div>}
           </CardContent>
         </Card>
@@ -242,21 +244,21 @@ export default function PlayersPage() {
       {showImportForm && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle>Importa Calciatori da Excel</CardTitle>
-            <CardDescription>Carica un file Excel con i calciatori. Le righe con asterisco (*) verranno ignorate.</CardDescription>
+            <CardTitle>{t('players.importExcelTitle')}</CardTitle>
+            <CardDescription>{t('players.importExcelDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleFileUpload} className="space-y-4">
               <div>
-                <Label htmlFor="file">File Excel (.xlsx, .xls)</Label>
+                <Label htmlFor="file">{t('players.excelFile')}</Label>
                 <Input id="file" name="file" type="file" accept=".xlsx,.xls" required />
               </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={uploading}>
-                  {uploading ? "Importazione..." : "Importa"}
+                  {uploading ? t('players.importing') : t('players.import')}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setShowImportForm(false)}>
-                  Annulla
+                  {t('common.cancel')}
                 </Button>
               </div>
             </form>
@@ -271,7 +273,7 @@ export default function PlayersPage() {
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Cerca per nome o squadra..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                <Input placeholder={t('players.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
               </div>
             </div>
             <div className="w-40">
@@ -281,11 +283,11 @@ export default function PlayersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tutti i ruoli</SelectItem>
-                  <SelectItem value="P">Portieri</SelectItem>
-                  <SelectItem value="D">Difensori</SelectItem>
-                  <SelectItem value="C">Centrocampisti</SelectItem>
-                  <SelectItem value="A">Attaccanti</SelectItem>
+                  <SelectItem value="all">{t('players.allRoles')}</SelectItem>
+                  <SelectItem value="P">{t('players.goalkeepers')}</SelectItem>
+                  <SelectItem value="D">{t('players.defenders')}</SelectItem>
+                  <SelectItem value="C">{t('players.midfielders')}</SelectItem>
+                  <SelectItem value="A">{t('players.forwards')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -295,9 +297,9 @@ export default function PlayersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Tutti</SelectItem>
-                  <SelectItem value="true">Disponibili</SelectItem>
-                  <SelectItem value="false">Assegnati</SelectItem>
+                  <SelectItem value="all">{t('players.allStatus')}</SelectItem>
+                  <SelectItem value="true">{t('players.availableOnly')}</SelectItem>
+                  <SelectItem value="false">{t('players.assignedOnly')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -310,9 +312,9 @@ export default function PlayersPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="50">50 per pagina</SelectItem>
-                  <SelectItem value="100">100 per pagina</SelectItem>
-                  <SelectItem value="all">Tutti</SelectItem>
+                  <SelectItem value="50">{t('players.itemsPerPage50')}</SelectItem>
+                  <SelectItem value="100">{t('players.itemsPerPage100')}</SelectItem>
+                  <SelectItem value="all">{t('players.itemsPerPageAll')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -322,11 +324,10 @@ export default function PlayersPage() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-4 border-t text-sm text-muted-foreground">
             <div className="flex items-center gap-4">
               <span>
-                <strong className="text-foreground">{players.length}</strong> calciatori visualizzati
+                <strong className="text-foreground">{players.length}</strong> {t('players.playersDisplayed', { count: players.length })}
                 {pagination.total !== players.length && (
                   <span>
-                    {" "}
-                    di <strong className="text-foreground">{pagination.total}</strong> totali
+                    {t('players.playersDisplayedOf', { total: pagination.total })}
                   </span>
                 )}
               </span>
@@ -335,21 +336,21 @@ export default function PlayersPage() {
               {(searchTerm || positionFilter !== "all" || availableFilter !== "all") && (
                 <div className="flex items-center gap-2">
                   <span>•</span>
-                  <span>Filtri attivi:</span>
+                  <span>{t('players.activeFilters')}</span>
                   <div className="flex gap-1">
                     {searchTerm && (
                       <Badge variant="secondary" className="text-xs">
-                        Ricerca: &quot;{searchTerm}&quot;
+                        {t('players.searchFilter', { term: searchTerm })}
                       </Badge>
                     )}
                     {positionFilter !== "all" && (
                       <Badge variant="secondary" className="text-xs">
-                        Ruolo: {positionFilter}
+                        {t('players.roleFilter', { role: positionFilter })}
                       </Badge>
                     )}
                     {availableFilter !== "all" && (
                       <Badge variant="secondary" className="text-xs">
-                        {availableFilter === "true" ? "Disponibili" : "Assegnati"}
+                        {availableFilter === "true" ? t('players.availableOnly') : t('players.assignedOnly')}
                       </Badge>
                     )}
                   </div>
@@ -359,20 +360,20 @@ export default function PlayersPage() {
 
             {/* Ordinamento attivo */}
             <div className="flex items-center gap-2">
-              <span>Ordinato per:</span>
+              <span>{t('players.sortedBy')}</span>
               <Badge variant="outline" className="text-xs">
                 {sorting.field === "name"
-                  ? "Nome"
+                  ? t('players.sortName')
                   : sorting.field === "position"
-                  ? "Ruolo"
+                  ? t('players.sortPosition')
                   : sorting.field === "realTeam"
-                  ? "Squadra"
+                  ? t('players.sortTeam')
                   : sorting.field === "price"
-                  ? "Prezzo"
+                  ? t('players.sortPrice')
                   : sorting.field === "isAssigned"
-                  ? "Stato"
+                  ? t('players.sortStatus')
                   : sorting.field}
-                {sorting.direction === "asc" ? " ↑" : " ↓"}
+                {sorting.direction === "asc" ? t('players.sortAsc') : t('players.sortDesc')}
               </Badge>
             </div>
           </div>
@@ -388,16 +389,16 @@ export default function PlayersPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableHeader field="name">Nome</SortableHeader>
-                  <SortableHeader field="position">Ruolo</SortableHeader>
-                  <SortableHeader field="realTeam">Squadra</SortableHeader>
+                  <SortableHeader field="name">{t('common.name')}</SortableHeader>
+                  <SortableHeader field="position">{t('players.position')}</SortableHeader>
+                  <SortableHeader field="realTeam">{t('players.team')}</SortableHeader>
                   <SortableHeader field="price" className="text-right">
-                    Prezzo
+                    {t('players.price')}
                   </SortableHeader>
                   <SortableHeader field="isAssigned" className="text-center">
-                    Stato
+                    {t('players.status')}
                   </SortableHeader>
-                  {isAdmin && league.status === "SETUP" && <TableHead className="text-right">Azioni</TableHead>}
+                  {isAdmin && league.status === "SETUP" && <TableHead className="text-right">{t('players.actionsColumn')}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -415,11 +416,11 @@ export default function PlayersPage() {
                     <TableCell className="text-center">
                       {player.isAssigned ? (
                         <Badge variant="outline" className="text-xs">
-                          Assegnato
+                          {t('players.assigned')}
                         </Badge>
                       ) : (
                         <Badge variant="secondary" className="text-xs">
-                          Disponibile
+                          {t('players.available')}
                         </Badge>
                       )}
                     </TableCell>
@@ -429,15 +430,15 @@ export default function PlayersPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            title="Modifica calciatore"
+                            title={t('players.editPlayer')}
                             onClick={() => {
-                              alert("Funzionalità di modifica in arrivo nella prossima versione");
+                              alert(t('errors.editFeatureComing'));
                             }}
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
                           {!player.isAssigned && (
-                            <Button size="sm" variant="outline" title="Elimina calciatore" onClick={() => handleDeletePlayer(player.id, player.name)}>
+                            <Button size="sm" variant="outline" title={t('players.deletePlayer')} onClick={() => handleDeletePlayer(player.id, player.name)}>
                               <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
@@ -459,15 +460,17 @@ export default function PlayersPage() {
             <div className="flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
                 {pagination.totalPages === 1
-                  ? `Mostrando tutti i ${pagination.total} calciatori`
-                  : `Mostrando ${Math.min(pagination.limit * (pagination.page - 1) + 1, pagination.total)} - ${Math.min(pagination.limit * pagination.page, pagination.total)} di ${
-                      pagination.total
-                    } calciatori`}
+                  ? t('players.showingAll', { total: pagination.total })
+                  : t('players.showingRange', { 
+                      start: Math.min(pagination.limit * (pagination.page - 1) + 1, pagination.total),
+                      end: Math.min(pagination.limit * pagination.page, pagination.total),
+                      total: pagination.total
+                    })}
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={prevPage} disabled={pagination.page === 1}>
                   <ChevronLeft className="h-4 w-4" />
-                  Precedente
+                  {t('players.previousPage')}
                 </Button>
 
                 <div className="flex items-center gap-1">
@@ -492,7 +495,7 @@ export default function PlayersPage() {
                 </div>
 
                 <Button variant="outline" size="sm" onClick={nextPage} disabled={pagination.page === pagination.totalPages}>
-                  Successiva
+                  {t('players.nextPage')}
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -505,12 +508,12 @@ export default function PlayersPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nessun Calciatore Trovato</h3>
-            <p className="text-muted-foreground mb-4">{isAdmin ? "Importa un file Excel per aggiungere i calciatori alla lega." : "Non ci sono ancora calciatori in questa lega."}</p>
+            <h3 className="text-lg font-semibold mb-2">{t('players.noPlayersFoundTitle')}</h3>
+            <p className="text-muted-foreground mb-4">{isAdmin ? t('players.noPlayersFoundDescriptionAdmin') : t('players.noPlayersFoundDescriptionPlayer')}</p>
             {isAdmin && league.status === "SETUP" && (
               <Button onClick={() => setShowImportForm(true)}>
                 <Upload className="mr-2 h-4 w-4" />
-                Importa Excel
+                {t('players.importExcel')}
               </Button>
             )}
           </CardContent>
@@ -520,7 +523,7 @@ export default function PlayersPage() {
       {loading && (
         <Card>
           <CardContent className="py-12 text-center">
-            <div className="text-muted-foreground">Caricamento calciatori...</div>
+            <div className="text-muted-foreground">{t('players.loadingPlayers')}</div>
           </CardContent>
         </Card>
       )}

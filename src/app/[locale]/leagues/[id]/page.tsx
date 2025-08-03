@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { League, Team, useLeague } from "@/hooks/useLeague";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ export default function LeagueDetailPage() {
   const params = useParams();
   const leagueId = params.id as string;
   const locale = params.locale as string;
+  const t = useTranslations();
   const { league, userTeam, isAdmin, loading, fetchLeague } = useLeague(leagueId);
 
   useEffect(() => {
@@ -35,9 +37,9 @@ export default function LeagueDetailPage() {
     } as const;
 
     const labels = {
-      SETUP: "Setup",
-      AUCTION: "Asta in corso",
-      COMPLETED: "Completata",
+      SETUP: t('leagues.status.setup'),
+      AUCTION: t('leagues.status.auction'),
+      COMPLETED: t('leagues.status.completed'),
     };
 
     return <Badge variant={variants[status]}>{labels[status]}</Badge>;
@@ -77,11 +79,11 @@ export default function LeagueDetailPage() {
         <div>
           <h1 className="text-3xl font-bold mb-2">{league.name}</h1>
           <div className="flex items-center gap-4 text-muted-foreground">
-            <span>Admin: {league.admin.name}</span>
+            <span>{t('leagues.admin')}: {league.admin.name}</span>
             <span>•</span>
-            <span>{league._count.teams}/8 squadre</span>
+            <span>{league._count.teams}/8 {t('leagues.teams')}</span>
             <span>•</span>
-            <span>{league.credits} crediti iniziali</span>
+            <span>{league.credits} {t('leagues.initialCredits')}</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -89,19 +91,19 @@ export default function LeagueDetailPage() {
           <Link href={`/leagues/${league.id}/players`}>
             <Button variant="outline">
               <FileText className="mr-2 h-4 w-4" />
-              Calciatori
+              {t('navigation.players')}
             </Button>
           </Link>
           <Link href={`/leagues/${league.id}/auction`}>
             <Button variant={league.status === "AUCTION" ? "default" : "outline"}>
               <Gavel className="mr-2 h-4 w-4" />
-              Asta
+              {t('navigation.auction')}
             </Button>
           </Link>
           {isAdmin && (
             <Button variant="outline">
               <Settings className="mr-2 h-4 w-4" />
-              Gestisci
+              {t('common.manage')}
             </Button>
           )}
         </div>
@@ -113,18 +115,18 @@ export default function LeagueDetailPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserCheck className="h-5 w-5" />
-              La Tua Squadra: {userTeam.name}
+              {t('leagues.details.yourTeam', { teamName: userTeam.name })}
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{userTeam.remainingCredits}</div>
-                <div className="text-sm text-muted-foreground">Crediti Rimasti</div>
+                <div className="text-sm text-muted-foreground">{t('leagues.details.creditsRemaining')}</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold">{userTeam.teamPlayers.length}</div>
-                <div className="text-sm text-muted-foreground">Calciatori</div>
+                <div className="text-sm text-muted-foreground">{t('leagues.details.playersTotal')}</div>
               </div>
               {(() => {
                 const composition = getRosterComposition(userTeam);
@@ -133,11 +135,11 @@ export default function LeagueDetailPage() {
                   <>
                     <div className="text-center">
                       <div className="text-2xl font-bold">{composition.P + composition.D + composition.C + composition.A}/25</div>
-                      <div className="text-sm text-muted-foreground">Rosa</div>
+                      <div className="text-sm text-muted-foreground">{t('common.total')}</div>
                     </div>
                     <div className="text-center">
                       <div className={`text-2xl font-bold ${isComplete ? "text-green-600" : "text-orange-600"}`}>{isComplete ? "✓" : "○"}</div>
-                      <div className="text-sm text-muted-foreground">Completa</div>
+                      <div className="text-sm text-muted-foreground">{t('common.complete')}</div>
                     </div>
                   </>
                 );
@@ -162,24 +164,24 @@ export default function LeagueDetailPage() {
                     <CardTitle className="text-lg flex items-center gap-2">
                       {team.name}
                       {team.user.email === league.admin.email && <Crown className="h-4 w-4 text-yellow-500" />}
-                      {isCurrentUser && <Badge variant="secondary">Tu</Badge>}
+                      {isCurrentUser && <Badge variant="secondary">{t('roster.yourTeam')}</Badge>}
                     </CardTitle>
                     <CardDescription>{team.user.name}</CardDescription>
                   </div>
-                  <Badge variant={isComplete ? "default" : "outline"}>{isComplete ? "Completa" : "In corso"}</Badge>
+                  <Badge variant={isComplete ? "default" : "outline"}>{isComplete ? t('leagues.details.rosterComplete') : t('leagues.details.rosterInProgress')}</Badge>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {/* Crediti */}
                   <div className="flex justify-between">
-                    <span>Crediti rimasti:</span>
+                    <span>{t('leagues.details.creditsRemaining')}:</span>
                     <span className="font-semibold">{team.remainingCredits}</span>
                   </div>
 
                   {/* Composizione Rosa */}
                   <div>
-                    <div className="text-sm font-medium mb-2">Composizione Rosa:</div>
+                    <div className="text-sm font-medium mb-2">{t('leagues.details.rosterComposition')}</div>
                     <div className="grid grid-cols-4 gap-2 text-center">
                       <div className="space-y-1">
                         {getPositionBadge("P")}
@@ -202,7 +204,7 @@ export default function LeagueDetailPage() {
 
                   {/* Totale Calciatori */}
                   <div className="flex justify-between text-sm">
-                    <span>Totale calciatori:</span>
+                    <span>{t('common.total')} {t('navigation.players')}:</span>
                     <span>{team.teamPlayers.length}/25</span>
                   </div>
                 </div>
@@ -211,7 +213,7 @@ export default function LeagueDetailPage() {
                   <Link href={`/leagues/${league.id}/roster`}>
                     <Button size="sm" variant="outline" className="w-full">
                       <Trophy className="mr-2 h-3 w-3" />
-                      Visualizza Rosa
+                      {t('leagues.details.viewRoster')}
                     </Button>
                   </Link>
                 </div>
@@ -226,8 +228,8 @@ export default function LeagueDetailPage() {
         <Card>
           <CardContent className="py-12 text-center">
             <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nessuna Squadra</h3>
-            <p className="text-muted-foreground">Non ci sono ancora squadre in questa lega. Invita i tuoi amici a partecipare!</p>
+            <h3 className="text-lg font-semibold mb-2">{t('leagues.details.noTeamsTitle')}</h3>
+            <p className="text-muted-foreground">{t('leagues.details.noTeamsDescription')}</p>
           </CardContent>
         </Card>
       )}
@@ -237,8 +239,8 @@ export default function LeagueDetailPage() {
         <CardContent className="py-4">
           <div className="flex justify-between items-center">
             <div>
-              <div className="font-medium">ID Lega per invitare altri giocatori:</div>
-              <div className="text-sm text-muted-foreground">Condividi questo ID con i tuoi amici</div>
+              <div className="font-medium">{t('leagues.details.shareId')}</div>
+              <div className="text-sm text-muted-foreground">{t('leagues.details.shareIdDescription')}</div>
             </div>
             <div className="font-mono text-lg bg-muted px-3 py-1 rounded">{league.id}</div>
           </div>

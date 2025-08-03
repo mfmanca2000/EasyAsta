@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import { useSession } from 'next-auth/react'
+import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -56,16 +57,12 @@ interface NextRoundStats {
   recommendations: { P: boolean; D: boolean; C: boolean; A: boolean }
 }
 
-const positionNames = {
-  P: 'Portieri',
-  D: 'Difensori', 
-  C: 'Centrocampisti',
-  A: 'Attaccanti'
-}
+// Position names will be handled by translations
 
 export default function AuctionPage() {
   const params = useParams()
   const { data: session } = useSession()
+  const t = useTranslations()
   const [auctionState, setAuctionState] = useState<AuctionState | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
@@ -85,16 +82,16 @@ export default function AuctionPage() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Errore nel caricamento')
+        throw new Error(data.error || t('errors.fetchAuctionState'))
       }
 
       setAuctionState(data)
       setError(null)
     } catch (error) {
-      console.error('Errore fetch stato asta:', error)
-      setError(error instanceof Error ? error.message : 'Errore sconosciuto')
+      console.error(t('errors.fetchAuctionState'), error)
+      setError(error instanceof Error ? error.message : t('errors.unknownError'))
     }
-  }, [leagueId])
+  }, [leagueId, t])
 
   const checkIfAdmin = useCallback(async () => {
     try {
@@ -106,9 +103,9 @@ export default function AuctionPage() {
         setTeamCount(data.league.teams?.length || 0)
       }
     } catch (error) {
-      console.error('Errore verifica admin:', error)
+      console.error(t('errors.verifyAdmin'), error)
     }
-  }, [leagueId, session?.user?.email])
+  }, [leagueId, session?.user?.email, t])
 
   useEffect(() => {
     if (session && leagueId) {
@@ -143,12 +140,12 @@ export default function AuctionPage() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Errore avvio asta')
+        throw new Error(data.error || t('errors.startAuctionError'))
       }
 
       await fetchAuctionState()
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Errore avvio asta')
+      setError(error instanceof Error ? error.message : t('errors.startAuctionError'))
     } finally {
       setLoading(false)
     }
@@ -171,13 +168,13 @@ export default function AuctionPage() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Errore selezione')
+        throw new Error(data.error || t('errors.selectPlayerError'))
       }
 
       await fetchAuctionState()
       setSelectedPlayer(null)
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Errore selezione')
+      setError(error instanceof Error ? error.message : t('errors.selectPlayerError'))
     } finally {
       setIsSelecting(false)
     }
@@ -199,7 +196,7 @@ export default function AuctionPage() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Errore risoluzione')
+        throw new Error(data.error || t('errors.resolveRoundError'))
       }
 
       await fetchAuctionState()
@@ -210,7 +207,7 @@ export default function AuctionPage() {
         setShowNextRoundModal(true)
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Errore risoluzione')
+      setError(error instanceof Error ? error.message : t('errors.resolveRoundError'))
     } finally {
       setLoading(false)
     }
@@ -225,7 +222,7 @@ export default function AuctionPage() {
         setNextRoundStats(data)
       }
     } catch (error) {
-      console.error('Errore caricamento statistiche:', error)
+      console.error(t('errors.loadingStats'), error)
     }
   }
 
@@ -244,13 +241,13 @@ export default function AuctionPage() {
       const data = await response.json()
       
       if (!response.ok) {
-        throw new Error(data.error || 'Errore avvio turno')
+        throw new Error(data.error || t('errors.nextRoundError'))
       }
 
       setShowNextRoundModal(false)
       await fetchAuctionState()
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Errore avvio turno')
+      setError(error instanceof Error ? error.message : t('errors.nextRoundError'))
     } finally {
       setLoading(false)
     }
@@ -271,7 +268,7 @@ export default function AuctionPage() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
         <Button onClick={() => window.location.reload()}>
-          Ricarica pagina
+          {t('auction.reloadPage')}
         </Button>
       </div>
     )
@@ -284,10 +281,10 @@ export default function AuctionPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5" />
-              Asta Fantacalcio
+              {t('auction.title')}
             </CardTitle>
             <CardDescription>
-              {auctionState ? 'Nessun turno attivo' : 'L&apos;asta non è ancora iniziata'}
+              {auctionState ? t('auction.noActiveRound') : t('auction.notStarted')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -298,8 +295,7 @@ export default function AuctionPage() {
                     {teamCount < 4 && (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800">
-                          <strong>Squadre insufficienti:</strong> Servono almeno 4 squadre per avviare l'asta. 
-                          Attualmente: {teamCount}/4 squadre.
+                          {t('auction.insufficientTeams', { count: teamCount })}
                         </p>
                       </div>
                     )}
@@ -308,7 +304,7 @@ export default function AuctionPage() {
                       disabled={loading || teamCount < 4}
                     >
                       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Avvia Asta
+                      {t('auction.startAuction')}
                     </Button>
                   </>
                 ) : (
@@ -316,13 +312,12 @@ export default function AuctionPage() {
                     {teamCount < 4 && (
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p className="text-sm text-yellow-800">
-                          <strong>Squadre insufficienti:</strong> Servono almeno 4 squadre per continuare l'asta. 
-                          Attualmente: {teamCount}/4 squadre.
+                          {t('auction.insufficientTeamsContinue', { count: teamCount })}
                         </p>
                       </div>
                     )}
                     <p className="text-muted-foreground mb-4">
-                      Turno completato. Scegli il ruolo per il prossimo turno:
+                      {t('auction.roundCompleted')}
                     </p>
                     <Button 
                       onClick={async () => {
@@ -332,14 +327,14 @@ export default function AuctionPage() {
                       disabled={loading || teamCount < 4}
                     >
                       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Avvia Prossimo Turno
+                      {t('auction.startNextRound')}
                     </Button>
                   </>
                 )}
               </div>
             ) : (
               <p className="text-muted-foreground">
-                Aspetta che l&apos;admin {auctionState ? 'avvii il prossimo turno' : 'avvii l&apos;asta'}...
+                {t('auction.waitForAdmin', { action: auctionState ? t('auction.startNextRoundAction') : t('auction.startAuctionAction') })}
               </p>
             )}
           </CardContent>
@@ -358,20 +353,20 @@ export default function AuctionPage() {
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Trophy className="w-5 h-5" />
-              Asta Fantacalcio - {positionNames[currentRound!.position]}
+              {t('auction.title')} - {t(`auction.positions.${currentRound!.position}`)}
             </div>
             <Badge variant={currentRound!.status === 'SELECTION' ? 'default' : 'secondary'}>
-              {currentRound!.status === 'SELECTION' ? 'Selezione' : 'Risoluzione'}
+              {currentRound!.status === 'SELECTION' ? t('auction.selection') : t('auction.resolution')}
             </Badge>
           </CardTitle>
           <CardDescription className="flex items-center gap-4">
             <span className="flex items-center gap-1">
               <Clock className="w-4 h-4" />
-              Turno {currentRound!.roundNumber}
+              {t('auction.round', { number: currentRound!.roundNumber })}
             </span>
             <span className="flex items-center gap-1">
               <Users className="w-4 h-4" />
-              {currentRound!.selections.length} selezioni
+              {t('auction.selections', { count: currentRound!.selections.length })}
             </span>
           </CardDescription>
         </CardHeader>
@@ -382,12 +377,12 @@ export default function AuctionPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-sm text-green-600">
-              ✓ Hai selezionato: {userSelection.player.name}
+              {t('auction.selectedPlayer', { playerName: userSelection.player.name })}
             </CardTitle>
             <CardDescription>
               {userSelection.randomNumber ? 
-                `Numero casuale: ${userSelection.randomNumber} ${userSelection.isWinner ? '🏆' : ''}` :
-                'In attesa degli altri giocatori...'
+                t('auction.randomNumber', { number: userSelection.randomNumber, winner: userSelection.isWinner ? '🏆' : '' }) :
+                t('auction.waitingForOthers')
               }
             </CardDescription>
           </CardHeader>
@@ -395,9 +390,9 @@ export default function AuctionPage() {
       ) : currentRound!.status === 'SELECTION' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Seleziona un calciatore</CardTitle>
+            <CardTitle>{t('auction.selectPlayer')}</CardTitle>
             <CardDescription>
-              Scegli un {positionNames[currentRound!.position].toLowerCase()} dalla lista
+              {t('auction.selectPlayerDescription', { position: t(`auction.positionsSingular.${currentRound!.position}`) })}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -433,7 +428,7 @@ export default function AuctionPage() {
                           disabled={isSelecting}
                         >
                           {isSelecting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                          Seleziona
+                          {t('auction.selectButton')}
                         </Button>
                       )}
                     </div>
@@ -449,7 +444,7 @@ export default function AuctionPage() {
       {currentRound!.selections.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>Selezioni Turno</CardTitle>
+            <CardTitle>{t('auction.roundSelections')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -488,12 +483,12 @@ export default function AuctionPage() {
       {isAdmin && currentRound!.status === 'RESOLUTION' && (
         <Card>
           <CardHeader>
-            <CardTitle>Controlli Admin</CardTitle>
+            <CardTitle>{t('auction.adminControls')}</CardTitle>
           </CardHeader>
           <CardContent>
             <Button onClick={resolveRound} disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Risolvi Turno
+              {t('auction.resolveRound')}
             </Button>
           </CardContent>
         </Card>
@@ -503,9 +498,9 @@ export default function AuctionPage() {
       <Dialog open={showNextRoundModal} onOpenChange={setShowNextRoundModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Scegli il prossimo ruolo</DialogTitle>
+            <DialogTitle>{t('auction.chooseNextRole')}</DialogTitle>
             <DialogDescription>
-              Seleziona quale ruolo far scegliere nel prossimo turno d&apos;asta
+              {t('auction.chooseNextRoleDescription')}
             </DialogDescription>
           </DialogHeader>
           
@@ -513,7 +508,7 @@ export default function AuctionPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-4 gap-4">
                 {(['P', 'D', 'C', 'A'] as const).map((position) => {
-                  const positionName = positionNames[position]
+                  const positionName = t(`auction.positions.${position}`)
                   const isRecommended = nextRoundStats.recommendations[position]
                   
                   return (
@@ -525,8 +520,8 @@ export default function AuctionPage() {
                           </Badge>
                           <h3 className="font-medium text-sm">{positionName}</h3>
                           <div className="text-xs text-muted-foreground space-y-1">
-                            <div>Necessari: {nextRoundStats.globalNeeds[position]}</div>
-                            <div>Disponibili: {nextRoundStats.availableByPosition[position]}</div>
+                            <div>{t('auction.needed', { count: nextRoundStats.globalNeeds[position] })}</div>
+                            <div>{t('auction.availableCount', { count: nextRoundStats.availableByPosition[position] })}</div>
                           </div>
                           <Button 
                             size="sm" 
@@ -536,7 +531,7 @@ export default function AuctionPage() {
                             className="w-full"
                           >
                             {loading && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                            Avvia Turno
+                            {t('auction.startRound')}
                           </Button>
                         </div>
                       </CardContent>
@@ -547,7 +542,7 @@ export default function AuctionPage() {
               
               {/* Dettaglio squadre */}
               <div className="mt-6">
-                <h4 className="font-medium mb-3">Situazione squadre:</h4>
+                <h4 className="font-medium mb-3">{t('auction.teamsSituation')}</h4>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {nextRoundStats.teamStats.map((team, index: number) => (
                     <div key={index} className="flex items-center justify-between text-sm p-2 border rounded">

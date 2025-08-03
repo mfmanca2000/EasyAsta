@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useLeague, Team } from "@/hooks/useLeague";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ export default function RosterPage() {
   const params = useParams();
   const leagueId = params.id as string;
   const locale = params.locale as string;
+  const t = useTranslations();
   const { league, userTeam, loading, fetchLeague } = useLeague(leagueId);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -89,7 +91,7 @@ export default function RosterPage() {
   };
 
   if (status === "loading" || loading) {
-    return <div className="flex justify-center items-center min-h-screen">Caricamento...</div>;
+    return <div className="flex justify-center items-center min-h-screen">{t('common.loading')}</div>;
   }
 
   if (!league) {
@@ -97,8 +99,8 @@ export default function RosterPage() {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="py-12 text-center">
-            <h3 className="text-lg font-semibold mb-2">Lega Non Trovata</h3>
-            <p className="text-muted-foreground">La lega richiesta non esiste o non hai i permessi per visualizzarla.</p>
+            <h3 className="text-lg font-semibold mb-2">{t('roster.leagueNotFoundTitle')}</h3>
+            <p className="text-muted-foreground">{t('roster.leagueNotFoundDescription')}</p>
           </CardContent>
         </Card>
       </div>
@@ -115,12 +117,12 @@ export default function RosterPage() {
         <Link href={`/leagues/${leagueId}`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Torna alla Lega
+            {t('roster.backToLeague')}
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">{league.name} - Rose</h1>
-          <p className="text-muted-foreground">Visualizza e gestisci le rose delle squadre</p>
+          <h1 className="text-2xl font-bold">{t('roster.rosterTitle', { leagueName: league.name })}</h1>
+          <p className="text-muted-foreground">{t('roster.rosterDescription')}</p>
         </div>
       </div>
 
@@ -129,8 +131,8 @@ export default function RosterPage() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Squadre</CardTitle>
-              <CardDescription>Seleziona una squadra per visualizzare la rosa</CardDescription>
+              <CardTitle className="text-lg">{t('roster.selectTeam')}</CardTitle>
+              <CardDescription>{t('roster.selectTeamDescription')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {league.teams.map((team) => {
@@ -144,10 +146,10 @@ export default function RosterPage() {
                     <div className="text-left w-full">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-semibold">{team.name}</span>
-                        {isUserTeam && <Badge variant="secondary">Tu</Badge>}
+                        {isUserTeam && <Badge variant="secondary">{t('roster.yourTeam')}</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground">{team.user.name}</div>
-                      <div className="text-xs mt-1">{totalPlayers}/25 calciatori</div>
+                      <div className="text-xs mt-1">{t('roster.playersCount', { count: totalPlayers })}</div>
                       <div className="flex gap-1 mt-1">
                         <span className="text-xs">P:{teamComposition.P}</span>
                         <span className="text-xs">D:{teamComposition.D}</span>
@@ -176,7 +178,7 @@ export default function RosterPage() {
                         {selectedTeam.name}
                       </CardTitle>
                       <CardDescription>
-                        Proprietario: {selectedTeam.user.name} | Crediti rimasti: {selectedTeam.remainingCredits}
+                        {t('roster.owner', { name: selectedTeam.user.name, credits: selectedTeam.remainingCredits })}
                       </CardDescription>
                     </div>
                   </div>
@@ -186,22 +188,22 @@ export default function RosterPage() {
                     <div className="space-y-2">
                       {getPositionBadge("P")}
                       <div className={`text-lg font-bold ${composition.P === 3 ? "text-green-600" : "text-orange-600"}`}>{composition.P}/3</div>
-                      <div className="text-xs text-muted-foreground">Portieri</div>
+                      <div className="text-xs text-muted-foreground">{t('roster.positions.P')}</div>
                     </div>
                     <div className="space-y-2">
                       {getPositionBadge("D")}
                       <div className={`text-lg font-bold ${composition.D === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.D}/8</div>
-                      <div className="text-xs text-muted-foreground">Difensori</div>
+                      <div className="text-xs text-muted-foreground">{t('roster.positions.D')}</div>
                     </div>
                     <div className="space-y-2">
                       {getPositionBadge("C")}
                       <div className={`text-lg font-bold ${composition.C === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.C}/8</div>
-                      <div className="text-xs text-muted-foreground">Centrocampisti</div>
+                      <div className="text-xs text-muted-foreground">{t('roster.positions.C')}</div>
                     </div>
                     <div className="space-y-2">
                       {getPositionBadge("A")}
                       <div className={`text-lg font-bold ${composition.A === 6 ? "text-green-600" : "text-orange-600"}`}>{composition.A}/6</div>
-                      <div className="text-xs text-muted-foreground">Attaccanti</div>
+                      <div className="text-xs text-muted-foreground">{t('roster.positions.A')}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -214,7 +216,7 @@ export default function RosterPage() {
                     <div className="flex-1">
                       <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Cerca per nome o squadra..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                        <Input placeholder={t('roster.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                       </div>
                     </div>
                     <Select value={positionFilter} onValueChange={(value: "all" | "P" | "D" | "C" | "A") => setPositionFilter(value)}>
@@ -223,11 +225,11 @@ export default function RosterPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Tutte le posizioni</SelectItem>
-                        <SelectItem value="P">Portieri</SelectItem>
-                        <SelectItem value="D">Difensori</SelectItem>
-                        <SelectItem value="C">Centrocampisti</SelectItem>
-                        <SelectItem value="A">Attaccanti</SelectItem>
+                        <SelectItem value="all">{t('roster.allPositions')}</SelectItem>
+                        <SelectItem value="P">{t('roster.positions.P')}</SelectItem>
+                        <SelectItem value="D">{t('roster.positions.D')}</SelectItem>
+                        <SelectItem value="C">{t('roster.positions.C')}</SelectItem>
+                        <SelectItem value="A">{t('roster.positions.A')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -237,7 +239,7 @@ export default function RosterPage() {
               {/* Lista Calciatori */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Rosa - {filteredPlayers.length} calciatori</CardTitle>
+                  <CardTitle>{t('roster.rosterPlayers', { count: filteredPlayers.length })}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {filteredPlayers.length > 0 ? (
@@ -256,7 +258,7 @@ export default function RosterPage() {
                           </div>
                           <div className="text-right">
                             <div className="font-semibold">{player.price}M</div>
-                            <div className="text-xs text-muted-foreground">Prezzo</div>
+                            <div className="text-xs text-muted-foreground">{t('common.price')}</div>
                           </div>
                         </div>
                       ))}
@@ -264,7 +266,7 @@ export default function RosterPage() {
                   ) : (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">{searchTerm || positionFilter !== "all" ? "Nessun calciatore trovato con i filtri selezionati" : "Nessun calciatore in rosa"}</p>
+                      <p className="text-muted-foreground">{searchTerm || positionFilter !== "all" ? t('roster.noPlayersFound') : t('roster.noPlayersInRoster')}</p>
                     </div>
                   )}
                 </CardContent>
@@ -274,8 +276,8 @@ export default function RosterPage() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Seleziona una Squadra</h3>
-                <p className="text-muted-foreground">Scegli una squadra dalla lista a sinistra per visualizzare la sua rosa.</p>
+                <h3 className="text-lg font-semibold mb-2">{t('roster.selectTeamTitle')}</h3>
+                <p className="text-muted-foreground">{t('roster.selectTeamText')}</p>
               </CardContent>
             </Card>
           )}
