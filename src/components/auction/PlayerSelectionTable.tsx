@@ -21,7 +21,7 @@ interface Player {
 interface PlayerSelectionTableProps {
   players: Player[];
   selectedPlayerId: string | null;
-  onPlayerSelect: (playerId: string) => void;
+  onPlayerSelect: (playerId: string | null) => void;
   onPlayerConfirm: (playerId: string) => void;
   isSelecting: boolean;
   disabled?: boolean;
@@ -195,7 +195,7 @@ export default function PlayerSelectionTable({
                         ? "bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-500" 
                         : "hover:bg-gray-50"
                     }`}
-                    onClick={() => !disabled && onPlayerSelect(player.id)}
+                    onClick={() => !disabled && onPlayerSelect(selectedPlayerId === player.id ? null : player.id)}
                   >
                     <TableCell className="font-medium">{player.name}</TableCell>
                     <TableCell className="text-muted-foreground">{player.realTeam}</TableCell>
