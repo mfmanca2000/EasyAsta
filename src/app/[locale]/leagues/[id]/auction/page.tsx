@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Users, Clock, Trophy, Coins } from "lucide-react";
+import AdminControlPanel from "@/components/auction/AdminControlPanel";
 
 interface NextRoundStats {
   teamStats: Array<{
@@ -490,6 +491,18 @@ export default function AuctionPage() {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Pannello Controllo Admin Avanzato */}
+      {isAdmin && auctionState && (
+        <AdminControlPanel
+          leagueId={leagueId}
+          currentRound={currentRound || undefined}
+          teams={auctionState.teams || []}
+          availablePlayers={availablePlayers}
+          selections={currentRound?.selections || []}
+          config={auctionState.config}
+        />
       )}
 
       {/* Modal Scelta Prossimo Ruolo */}

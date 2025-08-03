@@ -62,6 +62,7 @@ model User {
   adminLeagues  League[]  @relation("LeagueAdmin")
   teams         Team[]
   selections    PlayerSelection[]
+  adminActions  AdminAction[] @relation("AdminUser")
 }
 
 // League - Leghe fantacalcio
@@ -79,6 +80,8 @@ model League {
   teams       Team[]
   players     Player[]
   rounds      AuctionRound[]
+  config      AuctionConfig?
+  adminActions AdminAction[]
 }
 
 // Team - Squadre dei giocatori
@@ -95,6 +98,7 @@ model Team {
   user            User      @relation(fields: [userId], references: [id])
   league          League    @relation(fields: [leagueId], references: [id])
   teamPlayers     TeamPlayer[]
+  adminActions    AdminAction[] @relation("AdminTargetTeam")
   
   @@unique([userId, leagueId])
 }
@@ -115,6 +119,7 @@ model Player {
   league      League      @relation(fields: [leagueId], references: [id])
   teamPlayers TeamPlayer[]
   selections  PlayerSelection[]
+  adminActions AdminAction[] @relation("AdminTargetPlayer")
 }
 
 // TeamPlayer - Calciatori assegnati alle squadre
@@ -144,6 +149,7 @@ model AuctionRound {
   // Relazioni
   league      League      @relation(fields: [leagueId], references: [id])
   selections  PlayerSelection[]
+  adminActions AdminAction[] @relation("AdminTargetRound")
 }
 
 // PlayerSelection - Selezioni dei giocatori
@@ -154,6 +160,8 @@ model PlayerSelection {
   playerId      String
   randomNumber  Int?
   isWinner      Boolean   @default(false)
+  isAdminSelection Boolean @default(false)  // Traccia se selezione fatta da admin
+  adminReason   String?   // Motivazione se selezione admin
   createdAt     DateTime  @default(now())
   
   // Relazioni
@@ -187,4 +195,50 @@ enum RoundStatus {
   SELECTION
   RESOLUTION
   COMPLETED
+}
+
+// AuctionConfig - Configurazioni asta per lega
+model AuctionConfig {
+  id              String   @id @default(cuid())
+  leagueId        String   @unique
+  timeoutSeconds  Int      @default(30)
+  autoSelectOnTimeout Boolean @default(true)
+  pauseOnDisconnect Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relazioni
+  league          League   @relation(fields: [leagueId], references: [id])
+}
+
+// AdminAction - Log azioni amministrative
+model AdminAction {
+  id          String      @id @default(cuid())
+  leagueId    String
+  adminId     String
+  action      AdminActionType
+  targetTeamId String?
+  playerId    String?
+  roundId     String?
+  reason      String?
+  metadata    Json?       // Dati aggiuntivi azione (JSON)
+  createdAt   DateTime    @default(now())
+  
+  // Relazioni
+  league      League      @relation(fields: [leagueId], references: [id])
+  admin       User        @relation("AdminUser", fields: [adminId], references: [id])
+  targetTeam  Team?       @relation("AdminTargetTeam", fields: [targetTeamId], references: [id])
+  player      Player?     @relation("AdminTargetPlayer", fields: [playerId], references: [id])
+  round       AuctionRound? @relation("AdminTargetRound", fields: [roundId], references: [id])
+}
+
+// Enum per tipi di azioni admin
+enum AdminActionType {
+  ADMIN_SELECT        // Selezione per conto terzi
+  CANCEL_SELECTION    // Annullamento selezione
+  FORCE_RESOLUTION    // Forzatura risoluzione
+  RESET_ROUND        // Reset turno
+  TIMEOUT_CONFIG     // Modifica configurazione timeout
+  EMERGENCY_PAUSE    // Pausa emergenza
+  BACKUP_RESTORE     // Backup/restore stato
 }

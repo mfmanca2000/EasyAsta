@@ -9,6 +9,10 @@ interface AuctionState {
     status: 'SELECTION' | 'RESOLUTION' | 'COMPLETED'
     selections: Array<{
       id: string
+      userId: string
+      playerId: string
+      isAdminSelection?: boolean
+      adminReason?: string
       user: { id: string; name: string }
       player: {
         id: string
@@ -39,6 +43,22 @@ interface AuctionState {
     }
     randomNumber?: number
     isWinner: boolean
+  }
+  teams?: Array<{
+    id: string
+    name: string
+    userId: string
+    remainingCredits: number
+    user: {
+      id: string
+      name?: string
+      email: string
+    }
+  }>
+  config?: {
+    timeoutSeconds: number
+    autoSelectOnTimeout: boolean
+    pauseOnDisconnect: boolean
   }
   hasActiveRound: boolean
 }

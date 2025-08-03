@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'LeagueId richiesto' }, { status: 400 })
     }
 
-    // Verifica accesso alla lega
+    // Verifica accesso alla lega e se è admin
     const userTeam = await prisma.team.findFirst({
       where: {
         leagueId,
@@ -119,7 +119,18 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    if (!userTeam) {
+    const league = await prisma.league.findFirst({
+      where: {
+        id: leagueId,
+        admin: {
+          email: session.user.email
+        }
+      }
+    })
+
+    const isAdmin = !!league
+
+    if (!userTeam && !isAdmin) {
       return NextResponse.json({ error: 'Accesso negato alla lega' }, { status: 403 })
     }
 
@@ -166,14 +177,34 @@ export async function GET(request: NextRequest) {
     })
 
     // Verifica se l'utente ha già fatto una selezione in questo turno
-    const userSelection = currentRound.selections.find(
+    const userSelection = userTeam ? currentRound.selections.find(
       selection => selection.user.id === userTeam.userId
-    )
+    ) : undefined
+
+    // Dati aggiuntivi per admin
+    let teams, config
+    if (isAdmin) {
+      teams = await prisma.team.findMany({
+        where: { leagueId },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true }
+          }
+        },
+        orderBy: { name: 'asc' }
+      })
+
+      config = await prisma.auctionConfig.findUnique({
+        where: { leagueId }
+      })
+    }
 
     return NextResponse.json({
       currentRound,
       availablePlayers,
       userSelection,
+      teams: teams || undefined,
+      config: config || undefined,
       hasActiveRound: true
     })
 
