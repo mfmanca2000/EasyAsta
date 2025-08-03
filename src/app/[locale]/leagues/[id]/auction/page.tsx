@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Loader2, Users, Clock, Trophy, Coins } from "lucide-react";
 import AdminControlPanel from "@/components/auction/AdminControlPanel";
 import ConflictResolutionModal from "@/components/auction/ConflictResolutionModal";
+import PlayerSelectionTable from "@/components/auction/PlayerSelectionTable";
 
 interface NextRoundStats {
   teamStats: Array<{
@@ -594,50 +595,13 @@ export default function AuctionPage() {
           </CardHeader>
         </Card>
       ) : currentRound!.status === "SELECTION" ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("auction.selectPlayer")}</CardTitle>
-            <CardDescription>{t("auction.selectPlayerDescription", { position: t(`auction.positionsSingular.${currentRound!.position}`) })}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {availablePlayers.map((player) => (
-                <Card
-                  key={player.id}
-                  className={`cursor-pointer transition-colors ${selectedPlayer === player.id ? "ring-2 ring-blue-500" : "hover:bg-gray-50"}`}
-                  onClick={() => setSelectedPlayer(player.id)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold">{player.name}</h3>
-                      <Badge variant="outline">{player.position}</Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-2">{player.realTeam}</p>
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-sm font-medium">
-                        <Coins className="w-3 h-3" />
-                        {player.price}
-                      </span>
-                      {selectedPlayer === player.id && (
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            selectPlayer(player.id);
-                          }}
-                          disabled={isSelecting}
-                        >
-                          {isSelecting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                          {t("auction.selectButton")}
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <PlayerSelectionTable
+          players={availablePlayers}
+          selectedPlayerId={selectedPlayer}
+          onPlayerSelect={setSelectedPlayer}
+          onPlayerConfirm={selectPlayer}
+          isSelecting={isSelecting}
+        />
       ) : null}
 
       {/* Selezioni Attuali */}

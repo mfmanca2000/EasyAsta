@@ -287,6 +287,18 @@
     "selectPlayer": "Seleziona un calciatore",
     "selectPlayerDescription": "Scegli un {position} dalla lista",
     "selectButton": "Seleziona",
+    "choose": "Scegli",
+    "searchPlayers": "Cerca calciatori...",
+    "filterByTeam": "Filtra per squadra",
+    "allTeams": "Tutte le squadre",
+    "playersFound": "{count} calciatori trovati",
+    "playerName": "Nome Calciatore",
+    "team": "Squadra",
+    "position": "Ruolo",
+    "action": "Azione",
+    "noPlayersFound": "Nessun calciatore trovato",
+    "selectedPlayerMobile": "Selezionato: {name}",
+    "confirmSelection": "Conferma Selezione",
     "roundSelections": "Selezioni Turno",
     "adminControls": "Controlli Admin",
     "resolveRound": "Risolvi Turno",
@@ -318,7 +330,6 @@
     "extractedNumbers": "Numeri Estratti",
     "teamWon": "Squadra Vincitrice",
     "teamLost": "Squadra Perdente",
-    "randomNumber": "Numero",
     "continueRound": "Il turno continua con le squadre che non hanno vinto calciatori",
     "roundContinues": "Turno Continua",
     "auctionStartedToast": "Asta Iniziata",
@@ -327,6 +338,7 @@
     "roundReadyToast": "Turno Pronto",
     "roundReadyDescription": "Tutti hanno selezionato. Admin può risolvere il turno",
     "loading": "Caricamento...",
+    "price": "Prezzo",
     "admin": {
       "controlPanel": "Pannello di Controllo Admin",
       "noActiveRound": "Nessun turno attivo",
@@ -416,7 +428,7 @@
       "confirmResetAuction": "Sei sicuro di voler resettare completamente l'asta? Questa azione cancellerà tutti i turni, selezioni e rose. Non può essere annullata.",
       "resetSuccess": "Asta resettata con successo! La pagina verrà ricaricata.",
       "resetError": "Errore durante il reset dell'asta",
-      "resetWarning": "⚠️ Questa azione eliminerà tutti i dati dell'asta e non può essere annullata"
+      "resetWarning": "⚠️ Questa azione eliminerà tutti i dati dell'asta e non può essere annullata"      
     }
   },
   "errors": {

@@ -287,6 +287,18 @@
     "selectPlayer": "Sélectionner un joueur",
     "selectPlayerDescription": "Choisissez un {position} dans la liste",
     "selectButton": "Sélectionner",
+    "choose": "Choisir",
+    "searchPlayers": "Rechercher des joueurs...",
+    "filterByTeam": "Filtrer par équipe",
+    "allTeams": "Toutes les équipes",
+    "playersFound": "{count} joueurs trouvés",
+    "playerName": "Nom du Joueur",
+    "team": "Équipe",
+    "position": "Poste",
+    "action": "Action",
+    "noPlayersFound": "Aucun joueur trouvé",
+    "selectedPlayerMobile": "Sélectionné : {name}",
+    "confirmSelection": "Confirmer la Sélection",
     "roundSelections": "Sélections du Tour",
     "adminControls": "Contrôles Admin",
     "resolveRound": "Résoudre le Tour",
@@ -318,7 +330,6 @@
     "extractedNumbers": "Numéros Tirés",
     "teamWon": "Équipe Gagnante",
     "teamLost": "Équipe Perdante",
-    "randomNumber": "Numéro",
     "continueRound": "Le tour continue avec les équipes qui n'ont pas gagné de joueurs",
     "roundContinues": "Tour Continue",
     "auctionStartedToast": "Enchère Commencée",
@@ -327,6 +338,7 @@
     "roundReadyToast": "Tour Prêt",
     "roundReadyDescription": "Tous ont sélectionné. L'admin peut résoudre le tour",
     "loading": "Chargement...",
+    "price": "Prix",
     "admin": {
       "controlPanel": "Panneau de Contrôle Admin",
       "noActiveRound": "Aucun tour actif",
@@ -416,7 +428,7 @@
       "confirmResetAuction": "Êtes-vous sûr de vouloir réinitialiser complètement l'enchère ? Cette action supprimera tous les tours, sélections et effectifs. Elle ne peut pas être annulée.",
       "resetSuccess": "Enchère réinitialisée avec succès ! La page va être rechargée.",
       "resetError": "Erreur lors de la réinitialisation de l'enchère",
-      "resetWarning": "⚠️ Cette action supprimera toutes les données de l'enchère et ne peut pas être annulée"
+      "resetWarning": "⚠️ Cette action supprimera toutes les données de l'enchère et ne peut pas être annulée"      
     }
   },
   "errors": {
