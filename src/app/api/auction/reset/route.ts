@@ -32,8 +32,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Lega non trovata o non autorizzato' }, { status: 404 })
     }
 
+    // Get counts before reset for audit log
+    const [selectionsCount, roundsCount, teamPlayersCount, teamsCount] = await Promise.all([
+      prisma.playerSelection.count({
+        where: {
+          round: {
+            leagueId
+          }
+        }
+      }),
+      prisma.auctionRound.count({
+        where: { leagueId }
+      }),
+      prisma.teamPlayer.count({
+        where: {
+          team: {
+            leagueId
+          }
+        }
+      }),
+      prisma.team.count({
+        where: { leagueId }
+      })
+    ])
+
     // Reset completo dell'asta in una transazione
     await prisma.$transaction(async (tx) => {
+      // Log dell'azione admin PRIMA del reset
+      await tx.adminAction.create({
+        data: {
+          leagueId,
+          adminId: session.user.id!,
+          action: 'EMERGENCY_PAUSE', // Using EMERGENCY_PAUSE as closest enum value
+          reason: 'Reset completo dell\'asta - eliminazione di tutti i dati',
+          metadata: {
+            resetType: 'COMPLETE_AUCTION_RESET',
+            deletedSelections: selectionsCount,
+            deletedRounds: roundsCount,
+            deletedTeamPlayers: teamPlayersCount,
+            resetTeams: teamsCount,
+            resetCredits: league.credits,
+            leagueStatusBefore: league.status,
+            timestamp: new Date().toISOString()
+          }
+        }
+      })
+
       // 1. Elimina tutte le selezioni
       await tx.playerSelection.deleteMany({
         where: {
@@ -75,12 +119,7 @@ export async function POST(request: NextRequest) {
         data: { status: 'SETUP' }
       })
 
-      // 7. Elimina eventuali azioni admin
-      await tx.adminAction.deleteMany({
-        where: { leagueId }
-      })
-
-      // 8. Resetta configurazione asta se esiste
+      // 7. Resetta configurazione asta se esiste (ma NON eliminiamo AdminAction per mantenere audit trail)
       await tx.auctionConfig.deleteMany({
         where: { leagueId }
       })

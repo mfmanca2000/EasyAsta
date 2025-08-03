@@ -102,6 +102,14 @@ export async function POST(request: NextRequest) {
     }
 
     await prisma.$transaction(async (tx) => {
+      // Get current bot count for audit log
+      const currentBotCount = await tx.team.count({
+        where: {
+          leagueId,
+          user: { isBot: true }
+        }
+      })
+
       // Upsert configurazione bot
       await tx.botConfig.upsert({
         where: { leagueId },
@@ -141,6 +149,26 @@ export async function POST(request: NextRequest) {
         // Disabilita bot - rimuovi tutti
         await removeBotUsers(leagueId)
       }
+
+      // Log dell'azione admin
+      await tx.adminAction.create({
+        data: {
+          leagueId,
+          adminId: session.user.id!,
+          action: 'TIMEOUT_CONFIG', // Using closest enum value
+          reason: isEnabled ? 'Bot abilitati per modalità test' : 'Bot disabilitati',
+          metadata: {
+            actionType: 'BOT_CONFIG_UPDATE',
+            isEnabled,
+            botCount: isEnabled ? botCount : 0,
+            previousBotCount: currentBotCount,
+            selectionDelayMin,
+            selectionDelayMax,
+            intelligence,
+            timestamp: new Date().toISOString()
+          }
+        }
+      })
     })
 
     const finalBotCount = await prisma.team.count({
@@ -191,13 +219,39 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Lega non trovata o accesso negato' }, { status: 404 })
     }
 
-    await removeBotUsers(leagueId)
+    // Get current bot count for audit log
+    const currentBotCount = await prisma.team.count({
+      where: {
+        leagueId,
+        user: { isBot: true }
+      }
+    })
 
-    // Disabilita configurazione bot
-    await prisma.botConfig.upsert({
-      where: { leagueId },
-      update: { isEnabled: false },
-      create: { leagueId, isEnabled: false }
+    await prisma.$transaction(async (tx) => {
+      await removeBotUsers(leagueId)
+
+      // Disabilita configurazione bot
+      await tx.botConfig.upsert({
+        where: { leagueId },
+        update: { isEnabled: false },
+        create: { leagueId, isEnabled: false }
+      })
+
+      // Log dell'azione admin
+      await tx.adminAction.create({
+        data: {
+          leagueId,
+          adminId: session.user.id!,
+          action: 'TIMEOUT_CONFIG', // Using closest enum value
+          reason: 'Tutti i bot rimossi dalla lega',
+          metadata: {
+            actionType: 'BOT_REMOVAL',
+            removedBotCount: currentBotCount,
+            isEnabled: false,
+            timestamp: new Date().toISOString()
+          }
+        }
+      })
     })
 
     return NextResponse.json({

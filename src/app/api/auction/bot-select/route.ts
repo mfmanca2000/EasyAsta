@@ -87,21 +87,46 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Nessun calciatore disponibile per il bot' }, { status: 400 })
       }
 
-      // Esegui la selezione
-      const selectionRecord = await prisma.playerSelection.create({
-        data: {
-          roundId,
-          userId: botUserId,
-          playerId: selection.playerId,
-          isAdminSelection: true,
-          adminReason: `Selezione automatica bot: ${selection.reason}`
-        },
-        include: {
-          user: {
-            select: { id: true, name: true }
+      // Esegui la selezione e log audit in transazione
+      const selectionRecord = await prisma.$transaction(async (tx) => {
+        const selectionRecord = await tx.playerSelection.create({
+          data: {
+            roundId,
+            userId: botUserId,
+            playerId: selection.playerId,
+            isAdminSelection: true,
+            adminReason: `Selezione automatica bot: ${selection.reason}`
           },
-          player: true
-        }
+          include: {
+            user: {
+              select: { id: true, name: true }  
+            },
+            player: true
+          }
+        })
+
+        // Log dell'azione admin per selezione bot
+        await tx.adminAction.create({
+          data: {
+            leagueId,
+            adminId: session.user.id!,
+            action: 'ADMIN_SELECT',
+            targetTeamId: (await tx.team.findFirst({ where: { userId: botUserId, leagueId } }))?.id,
+            playerId: selection.playerId,
+            roundId,
+            reason: `Selezione bot automatica: ${selection.reason}`,
+            metadata: {
+              isBot: true,
+              botName: botUser.name,
+              selectionReason: selection.reason,
+              confidence: selection.confidence,
+              playerName: selectionRecord.player.name,
+              playerPrice: selectionRecord.player.price
+            }
+          }
+        })
+
+        return selectionRecord
       })
 
       // Emetti evento Socket.io per notificare la selezione del bot
@@ -185,20 +210,46 @@ export async function POST(request: NextRequest) {
       )
 
       if (selection) {
-        const selectionRecord = await prisma.playerSelection.create({
-          data: {
-            roundId,
-            userId: team.userId,
-            playerId: selection.playerId,
-            isAdminSelection: true,
-            adminReason: `Selezione automatica bot: ${selection.reason}`
-          },
-          include: {
-            user: {
-              select: { id: true, name: true }
+        const selectionRecord = await prisma.$transaction(async (tx) => {
+          const selectionRecord = await tx.playerSelection.create({
+            data: {
+              roundId,
+              userId: team.userId,
+              playerId: selection.playerId,
+              isAdminSelection: true,
+              adminReason: `Selezione automatica bot: ${selection.reason}`
             },
-            player: true
-          }
+            include: {
+              user: {
+                select: { id: true, name: true }
+              },
+              player: true
+            }
+          })
+
+          // Log dell'azione admin per selezione bot
+          await tx.adminAction.create({
+            data: {
+              leagueId,
+              adminId: session.user.id!,
+              action: 'ADMIN_SELECT',
+              targetTeamId: team.id,
+              playerId: selection.playerId,
+              roundId,
+              reason: `Selezione bot automatica: ${selection.reason}`,
+              metadata: {
+                isBot: true,
+                botName: team.user.name,
+                selectionReason: selection.reason,
+                confidence: selection.confidence,
+                playerName: selectionRecord.player.name,
+                playerPrice: selectionRecord.player.price,
+                simulatedDelay: delay.toFixed(1)
+              }
+            }
+          })
+
+          return selectionRecord
         })
 
         // Emetti evento Socket.io per ogni selezione bot

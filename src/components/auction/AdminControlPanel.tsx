@@ -13,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Clock, Settings, UserCheck, AlertTriangle, Shield, Eye, Bot } from "lucide-react";
 import BotManagementTab from "./BotManagementTab";
+import AuditTrail from "./AuditTrail";
 
 interface AdminControlPanelProps {
   leagueId: string;
@@ -504,17 +505,7 @@ export default function AdminControlPanel({ leagueId, currentRound, teams, avail
       {/* Audit Trail Tab */}
       {activeTab === "bot" && <BotManagementTab leagueId={leagueId} currentRound={currentRound} />}
 
-      {activeTab === "audit" && (
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("admin.auditTrail")}</CardTitle>
-            <CardDescription>{t("admin.auditTrailDesc")}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center text-muted-foreground py-8">{t("admin.auditTrailPlaceholder")}</div>
-          </CardContent>
-        </Card>
-      )}
+      {activeTab === "audit" && <AuditTrail leagueId={leagueId} />}
     </div>
   );
 }
