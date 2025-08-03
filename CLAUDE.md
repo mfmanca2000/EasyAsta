@@ -259,13 +259,13 @@ EasyAsta/
 - [x] Pagina login/logout
 - [x] Dashboard base per utenti
 
-### Fase 4: Internazionalizzazione (1 giorno)
-- [ ] Configurare next-intl per supporto multilingue
-- [ ] Creare file di traduzione (IT/EN)
-- [ ] Implementare switch lingua in UI
-- [ ] Tradurre componenti UI base e messaggi
-- [ ] Localizzazione date e numeri
-- [ ] Test funzionalità multilingue
+### Fase 4: Internazionalizzazione (1 giorno) ✅ COMPLETATA
+- [x] Configurare next-intl per supporto multilingue
+- [x] Creare file di traduzione completi (IT/FR)
+- [x] Implementare sistema traduzioni con useTranslations
+- [x] Tradurre tutte le stringhe UI e messaggi di errore
+- [x] Localizzazione di 325+ stringhe per lingua
+- [x] Test e correzione dependency arrays React Hook
 
 ### Fase 5: Gestione Leghe e Squadre (2 giorni)
 - [x] API e UI creazione leghe
@@ -394,6 +394,7 @@ npm run type-check
 - ✅ **Gestione Locale**: Redirect dinamici basati su locale corrente
 - ✅ **Validazione Robusta**: Controlli crediti, stato lega, duplicati
 - ✅ **Transazioni Database**: Operazioni atomiche per consistency
+- ✅ **Internazionalizzazione Completa**: Supporto multilingue IT/FR con next-intl
 
 ### Problemi da Risolvere
 - Sostituire polling con Socket.io per real-time
@@ -404,9 +405,9 @@ npm run type-check
 
 ## Stato Attuale
 
-**Data ultimo aggiornamento**: 2025-08-02  
-**Fase corrente**: Fasi 1-7 completate  
-**Prossimo step**: Iniziare Fase 8 - Real-time con Socket.io  
+**Data ultimo aggiornamento**: 2025-08-03  
+**Fase corrente**: Fasi 1-8 completate + Internazionalizzazione  
+**Prossimo step**: Iniziare Fase 9 - Funzionalità Admin Avanzate  
 
 ### Completato
 - [x] **Fase 1**: Setup Iniziale
@@ -467,15 +468,36 @@ npm run type-check
   - [x] Modal statistiche per selezione prossimo ruolo
   - [x] Polling real-time per aggiornamenti (temporaneo)
 
+- [x] **Fase 4**: Internazionalizzazione (Completata)
+  - [x] Configurazione next-intl per supporto multilingue
+  - [x] Creazione file di traduzione completi (IT/FR)
+  - [x] Traduzione di tutte le stringhe UI in italiano e francese
+  - [x] Sistema di switching lingua funzionante
+  - [x] Localizzazione messaggi di errore e notifiche
+  - [x] 325+ traduzioni per entrambe le lingue
+  - [x] Sostituzione di tutte le stringhe hardcoded con chiavi di traduzione
+  - [x] Gestione corretta delle dipendenze React Hook per le traduzioni
+
+- [x] **Fase 8**: Real-time e Socket.io (Completata)
+  - [x] Configurazione server Socket.io con Next.js 15
+  - [x] Custom server per gestire Socket.io
+  - [x] Integrazione eventi Socket.io nelle API routes
+  - [x] Hook useSocketIO per gestione connessioni client
+  - [x] Hook useAuctionRealtime per stato asta real-time
+  - [x] Sostituzione completa del polling con Socket.io
+  - [x] Sistema notifiche toast per eventi real-time
+  - [x] Gestione heartbeat e riconnessioni automatiche
+  - [x] Tracciamento utenti connessi e disconnessioni
+  - [x] Fallback polling quando Socket.io non disponibile
+  - [x] Indicatori visual stato connessione real-time
+
 ### In Corso
-- [ ] **Fase 8**: Real-time e Socket.io
+- [ ] **Fase 9**: Funzionalità Admin Avanzate
 
 ### Da Fare
-- Real-time con Socket.io (sostituire polling)
 - Funzionalità Admin avanzate (Fase 9)
 - Testing e Ottimizzazioni (Fase 10)
 - Deploy (Fase 11)
-- Internazionalizzazione (Fase 4) - Opzionale
 
 ---
 

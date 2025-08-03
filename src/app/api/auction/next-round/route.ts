@@ -5,6 +5,13 @@ import { prisma } from '@/lib/prisma'
 import { createNextRound } from '@/lib/auction'
 import { z } from 'zod'
 
+// Get global Socket.io instance
+interface GlobalSocket {
+  io?: import('socket.io').Server
+}
+
+declare const globalThis: GlobalSocket & typeof global
+
 const nextRoundSchema = z.object({
   leagueId: z.string().cuid(),
   position: z.enum(['P', 'D', 'C', 'A']),
@@ -41,6 +48,16 @@ export async function POST(request: NextRequest) {
 
     // Crea il nuovo turno
     const newRound = await createNextRound(leagueId, position)
+
+    // Emetti evento Socket.io per notificare il nuovo turno
+    if (globalThis.io) {
+      globalThis.io.to(`auction-${leagueId}`).emit('next-round-started', {
+        leagueId,
+        round: newRound,
+        position,
+        message: `Nuovo turno avviato per ${position === 'P' ? 'Portieri' : position === 'D' ? 'Difensori' : position === 'C' ? 'Centrocampisti' : 'Attaccanti'}`
+      })
+    }
 
     return NextResponse.json({
       round: newRound,

@@ -5,6 +5,13 @@ import { prisma } from '@/lib/prisma'
 import { resolveRound } from '@/lib/auction'
 import { z } from 'zod'
 
+// Get global Socket.io instance
+interface GlobalSocket {
+  io?: import('socket.io').Server
+}
+
+declare const globalThis: GlobalSocket & typeof global
+
 const resolveRoundSchema = z.object({
   roundId: z.string().cuid(),
 })
@@ -54,6 +61,18 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await resolveRound(roundId)
+    
+    // Emetti evento Socket.io per notificare che il turno è stato risolto
+    if (globalThis.io) {
+      globalThis.io.to(`auction-${round.league.id}`).emit('round-resolved', {
+        leagueId: round.league.id,
+        roundId,
+        result,
+        assignments: result.assignments,
+        canContinue: result.canContinue
+      })
+    }
+    
     return NextResponse.json(result)
 
   } catch (error) {

@@ -297,7 +297,15 @@
       "D": "défenseur", 
       "C": "milieu",
       "A": "attaquant"
-    }
+    },
+    "playerSelectedToast": "Sélection Effectuée",
+    "roundResolvedToast": "Tour Résolu",
+    "roundResolvedDescription": "Les joueurs ont été assignés aux équipes",
+    "auctionStartedToast": "Enchère Commencée",
+    "auctionStartedDescription": "L'enchère a commencé ! Sélectionnez vos joueurs",
+    "nextRoundStartedToast": "Nouveau Tour",
+    "roundReadyToast": "Tour Prêt",
+    "roundReadyDescription": "Tous ont sélectionné. L'admin peut résoudre le tour"
   },
   "errors": {
     "generic": "Une erreur s'est produite",

@@ -4,6 +4,13 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Get global Socket.io instance
+interface GlobalSocket {
+  io?: import('socket.io').Server
+}
+
+declare const globalThis: GlobalSocket & typeof global
+
 const startAuctionSchema = z.object({
   leagueId: z.string().cuid(),
 })
@@ -67,6 +74,15 @@ export async function POST(request: NextRequest) {
         status: 'SELECTION'
       }
     })
+
+    // Emetti evento Socket.io per notificare l'avvio dell'asta
+    if (globalThis.io) {
+      globalThis.io.to(`auction-${leagueId}`).emit('auction-started', {
+        leagueId,
+        currentRound: firstRound,
+        league: updatedLeague
+      })
+    }
 
     return NextResponse.json({
       league: updatedLeague,

@@ -4,6 +4,13 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+// Get global Socket.io instance
+interface GlobalSocket {
+  io?: import('socket.io').Server
+}
+
+declare const globalThis: GlobalSocket & typeof global
+
 const selectPlayerSchema = z.object({
   roundId: z.string().cuid(),
   playerId: z.string().cuid(),
@@ -104,6 +111,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    // Emetti evento Socket.io per notificare la selezione
+    if (globalThis.io) {
+      globalThis.io.to(`auction-${round.leagueId}`).emit('player-selected', {
+        selection,
+        leagueId: round.leagueId,
+        roundId
+      })
+    }
+
     // Controlla se tutti hanno selezionato
     const allSelections = await prisma.playerSelection.findMany({
       where: { roundId }
@@ -120,8 +136,15 @@ export async function POST(request: NextRequest) {
         data: { status: 'RESOLUTION' }
       })
 
-      // Trigger risoluzione automatica
-      // (sarà implementata nella prossima API)
+      // Emetti evento Socket.io per notificare che il turno è pronto per risoluzione
+      if (globalThis.io) {
+        globalThis.io.to(`auction-${round.leagueId}`).emit('round-ready-for-resolution', {
+          leagueId: round.leagueId,
+          roundId,
+          message: 'Turno completato, pronto per risoluzione'
+        })
+      }
+
       return NextResponse.json({
         selection,
         roundComplete: true,

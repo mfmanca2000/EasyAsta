@@ -296,7 +296,15 @@
       "D": "difensore",
       "C": "centrocampista",
       "A": "attaccante"
-    }
+    },
+    "playerSelectedToast": "Selezione Effettuata",
+    "roundResolvedToast": "Turno Risolto",
+    "roundResolvedDescription": "I calciatori sono stati assegnati alle squadre",
+    "auctionStartedToast": "Asta Iniziata",
+    "auctionStartedDescription": "L'asta è iniziata! Seleziona i tuoi calciatori",
+    "nextRoundStartedToast": "Nuovo Turno",
+    "roundReadyToast": "Turno Pronto",
+    "roundReadyDescription": "Tutti hanno selezionato. Admin può risolvere il turno"
   },
   "errors": {
     "generic": "Si è verificato un errore",
