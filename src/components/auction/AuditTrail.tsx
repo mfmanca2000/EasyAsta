@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, User, Target, Calendar, AlertCircle, UserCheck, Settings, RotateCcw, Shield } from "lucide-react";
+import { RefreshCw, Target, Calendar, AlertCircle, UserCheck, Settings, RotateCcw, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 interface AuditLog {
@@ -56,44 +56,45 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
   const [offset, setOffset] = useState(0);
   const limit = 20;
 
-  const fetchAuditLogs = async (resetData = false) => {
-    try {
-      setRefreshing(true);
-      const currentOffset = resetData ? 0 : offset;
-      
-      const response = await fetch(
-        `/api/auction/audit?leagueId=${leagueId}&limit=${limit}&offset=${currentOffset}`
-      );
+  const fetchAuditLogs = useCallback(
+    async (resetData = false) => {
+      try {
+        setRefreshing(true);
+        const currentOffset = resetData ? 0 : offset;
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch audit logs");
-      }
+        const response = await fetch(`/api/auction/audit?leagueId=${leagueId}&limit=${limit}&offset=${currentOffset}`);
 
-      const data = await response.json();
-      
-      if (resetData) {
-        setAuditLogs(data.auditLogs);
-        setOffset(limit);
-      } else {
-        setAuditLogs(prev => [...prev, ...data.auditLogs]);
-        setOffset(prev => prev + limit);
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || "Failed to fetch audit logs");
+        }
+
+        const data = await response.json();
+
+        if (resetData) {
+          setAuditLogs(data.auditLogs);
+          setOffset(limit);
+        } else {
+          setAuditLogs((prev) => [...prev, ...data.auditLogs]);
+          setOffset((prev) => prev + limit);
+        }
+
+        setTotalCount(data.totalCount);
+        setHasMore(data.hasMore);
+      } catch (error) {
+        console.error("Failed to fetch audit logs:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to fetch audit logs");
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
       }
-      
-      setTotalCount(data.totalCount);
-      setHasMore(data.hasMore);
-    } catch (error) {
-      console.error("Failed to fetch audit logs:", error);
-      toast.error(error instanceof Error ? error.message : "Failed to fetch audit logs");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
+    },
+    [leagueId, offset]
+  );
 
   useEffect(() => {
     fetchAuditLogs(true);
-  }, [leagueId]);
+  }, [leagueId, fetchAuditLogs]);
 
   const getActionIcon = (action: string) => {
     switch (action) {
@@ -184,16 +185,9 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
               <Shield className="h-5 w-5" />
               {t("admin.auditTrail")}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              {totalCount} total actions logged
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{totalCount} total actions logged</p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fetchAuditLogs(true)}
-            disabled={refreshing}
-          >
+          <Button variant="outline" size="sm" onClick={() => fetchAuditLogs(true)} disabled={refreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
             Refresh
           </Button>
@@ -210,15 +204,10 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
           <ScrollArea className="h-[600px]">
             <div className="space-y-4">
               {auditLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="border rounded-lg p-4 hover:bg-muted/50 transition-colors"
-                >
+                <div key={log.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className="mt-1">
-                        {getActionIcon(log.action)}
-                      </div>
+                      <div className="mt-1">{getActionIcon(log.action)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           {getActionBadge(log.action)}
@@ -227,22 +216,12 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
                             {formatTimestamp(log.createdAt)}
                           </div>
                         </div>
-                        <p className="text-sm font-medium mb-1">
-                          {getActionDescription(log)}
-                        </p>
-                        {log.reason && (
-                          <p className="text-sm text-muted-foreground italic">
-                            Reason: {log.reason}
-                          </p>
-                        )}
+                        <p className="text-sm font-medium mb-1">{getActionDescription(log)}</p>
+                        {log.reason && <p className="text-sm text-muted-foreground italic">Reason: {log.reason}</p>}
                         {log.metadata && Object.keys(log.metadata).length > 0 && (
                           <details className="mt-2">
-                            <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
-                              Additional details
-                            </summary>
-                            <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">
-                              {JSON.stringify(log.metadata, null, 2)}
-                            </pre>
+                            <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">Additional details</summary>
+                            <pre className="text-xs bg-muted p-2 rounded mt-1 overflow-x-auto">{JSON.stringify(log.metadata, null, 2)}</pre>
                           </details>
                         )}
                       </div>
@@ -250,17 +229,11 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
                   </div>
                 </div>
               ))}
-              
+
               {hasMore && (
                 <div className="text-center py-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => fetchAuditLogs(false)}
-                    disabled={refreshing}
-                  >
-                    {refreshing ? (
-                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
+                  <Button variant="outline" onClick={() => fetchAuditLogs(false)} disabled={refreshing}>
+                    {refreshing ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : null}
                     Load More
                   </Button>
                 </div>

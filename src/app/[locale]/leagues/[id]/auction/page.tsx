@@ -91,7 +91,7 @@ export default function AuctionPage() {
     },
     onAdminPlayerSelected: (data) => {
       console.log("Admin player selected in real-time:", data);
-      const { selection, targetTeam, adminReason } = data;
+      const { selection, targetTeam } = data;
       addToast({
         type: "info",
         title: t("auction.adminPlayerSelectedToast"),
@@ -205,7 +205,6 @@ export default function AuctionPage() {
     }
   }, [session, leagueId, checkIfAdmin]);
 
-
   const selectPlayer = async (playerId: string) => {
     if (!auctionState?.currentRound || isSelecting) return;
 
@@ -284,16 +283,16 @@ export default function AuctionPage() {
   const startNextRound = async (position: "P" | "D" | "C" | "A") => {
     try {
       setLoading(true);
-      
+
       // First, check if we need to start the auction (if league is still in SETUP)
       // We need to check the current league status
       const leagueResponse = await fetch(`/api/leagues/${leagueId}`);
       const leagueData = await leagueResponse.json();
-      
+
       if (!leagueResponse.ok) {
         throw new Error(leagueData.error || t("errors.loadLeagueError"));
       }
-      
+
       // If league is in SETUP, we need to start the auction first
       if (leagueData.league.status === "SETUP") {
         const startResponse = await fetch("/api/auction", {
@@ -308,7 +307,7 @@ export default function AuctionPage() {
           throw new Error(startData.error || t("errors.startAuctionError"));
         }
       }
-      
+
       // Now create the round
       const response = await fetch("/api/auction/next-round", {
         method: "POST",
@@ -595,13 +594,7 @@ export default function AuctionPage() {
           </CardHeader>
         </Card>
       ) : currentRound!.status === "SELECTION" ? (
-        <PlayerSelectionTable
-          players={availablePlayers}
-          selectedPlayerId={selectedPlayer}
-          onPlayerSelect={setSelectedPlayer}
-          onPlayerConfirm={selectPlayer}
-          isSelecting={isSelecting}
-        />
+        <PlayerSelectionTable players={availablePlayers} selectedPlayerId={selectedPlayer} onPlayerSelect={setSelectedPlayer} onPlayerConfirm={selectPlayer} isSelecting={isSelecting} />
       ) : null}
 
       {/* Selezioni Attuali */}

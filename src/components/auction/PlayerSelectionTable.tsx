@@ -30,14 +30,7 @@ interface PlayerSelectionTableProps {
 type SortField = "name" | "realTeam" | "price";
 type SortOrder = "asc" | "desc";
 
-export default function PlayerSelectionTable({
-  players,
-  selectedPlayerId,
-  onPlayerSelect,
-  onPlayerConfirm,
-  isSelecting,
-  disabled = false,
-}: PlayerSelectionTableProps) {
+export default function PlayerSelectionTable({ players, selectedPlayerId, onPlayerSelect, onPlayerConfirm, isSelecting, disabled = false }: PlayerSelectionTableProps) {
   const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState("");
   const [teamFilter, setTeamFilter] = useState<string>("all");
@@ -46,15 +39,14 @@ export default function PlayerSelectionTable({
 
   // Get unique teams for filter
   const uniqueTeams = useMemo(() => {
-    const teams = Array.from(new Set(players.map(p => p.realTeam))).sort();
+    const teams = Array.from(new Set(players.map((p) => p.realTeam))).sort();
     return teams;
   }, [players]);
 
   // Filter and sort players
   const filteredAndSortedPlayers = useMemo(() => {
-    let filtered = players.filter(player => {
-      const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           player.realTeam.toLowerCase().includes(searchTerm.toLowerCase());
+    const filtered = players.filter((player) => {
+      const matchesSearch = player.name.toLowerCase().includes(searchTerm.toLowerCase()) || player.realTeam.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesTeam = teamFilter === "all" || player.realTeam === teamFilter;
       return matchesSearch && matchesTeam;
     });
@@ -102,45 +94,37 @@ export default function PlayerSelectionTable({
     if (sortField !== field) {
       return <ArrowUpDown className="w-4 h-4 ml-1 text-gray-400" />;
     }
-    return sortOrder === "asc" ? 
-      <ArrowUp className="w-4 h-4 ml-1 text-blue-600" /> : 
-      <ArrowDown className="w-4 h-4 ml-1 text-blue-600" />;
+    return sortOrder === "asc" ? <ArrowUp className="w-4 h-4 ml-1 text-blue-600" /> : <ArrowDown className="w-4 h-4 ml-1 text-blue-600" />;
   };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t("auction.selectPlayer")}</CardTitle>
-        
+
         {/* Filters and Search */}
         <div className="flex flex-col sm:flex-row gap-4 mt-4">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder={t("auction.searchPlayers")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-              disabled={disabled}
-            />
+            <Input placeholder={t("auction.searchPlayers")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" disabled={disabled} />
           </div>
-          
+
           <Select value={teamFilter} onValueChange={setTeamFilter} disabled={disabled}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder={t("auction.filterByTeam")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("auction.allTeams")}</SelectItem>
-              {uniqueTeams.map(team => (
-                <SelectItem key={team} value={team}>{team}</SelectItem>
+              {uniqueTeams.map((team) => (
+                <SelectItem key={team} value={team}>
+                  {team}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        <div className="text-sm text-muted-foreground">
-          {t("auction.playersFound", { count: filteredAndSortedPlayers.length })}
-        </div>
+        <div className="text-sm text-muted-foreground">{t("auction.playersFound", { count: filteredAndSortedPlayers.length })}</div>
       </CardHeader>
 
       <CardContent>
@@ -148,28 +132,19 @@ export default function PlayerSelectionTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead 
-                  className="cursor-pointer hover:bg-gray-50 select-none"
-                  onClick={() => handleSort("name")}
-                >
+                <TableHead className="cursor-pointer hover:bg-gray-50 select-none" onClick={() => handleSort("name")}>
                   <div className="flex items-center">
                     {t("auction.playerName")}
                     {getSortIcon("name")}
                   </div>
                 </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-gray-50 select-none"
-                  onClick={() => handleSort("realTeam")}
-                >
+                <TableHead className="cursor-pointer hover:bg-gray-50 select-none" onClick={() => handleSort("realTeam")}>
                   <div className="flex items-center">
                     {t("auction.team")}
                     {getSortIcon("realTeam")}
                   </div>
                 </TableHead>
-                <TableHead 
-                  className="cursor-pointer hover:bg-gray-50 select-none text-right"
-                  onClick={() => handleSort("price")}
-                >
+                <TableHead className="cursor-pointer hover:bg-gray-50 select-none text-right" onClick={() => handleSort("price")}>
                   <div className="flex items-center justify-end">
                     {t("auction.price")}
                     {getSortIcon("price")}
@@ -190,11 +165,7 @@ export default function PlayerSelectionTable({
                 filteredAndSortedPlayers.map((player) => (
                   <TableRow
                     key={player.id}
-                    className={`cursor-pointer transition-colors ${
-                      selectedPlayerId === player.id 
-                        ? "bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-500" 
-                        : "hover:bg-gray-50"
-                    }`}
+                    className={`cursor-pointer transition-colors ${selectedPlayerId === player.id ? "bg-blue-50 hover:bg-blue-100 border-l-4 border-l-blue-500" : "hover:bg-gray-50"}`}
                     onClick={() => !disabled && onPlayerSelect(selectedPlayerId === player.id ? null : player.id)}
                   >
                     <TableCell className="font-medium">{player.name}</TableCell>
@@ -250,21 +221,14 @@ export default function PlayerSelectionTable({
         {selectedPlayerId && (
           <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md sm:hidden">
             {(() => {
-              const selectedPlayer = players.find(p => p.id === selectedPlayerId);
+              const selectedPlayer = players.find((p) => p.id === selectedPlayerId);
               return selectedPlayer ? (
                 <div className="space-y-2">
-                  <div className="font-medium text-blue-900">
-                    {t("auction.selectedPlayerMobile", { name: selectedPlayer.name })}
-                  </div>
+                  <div className="font-medium text-blue-900">{t("auction.selectedPlayerMobile", { name: selectedPlayer.name })}</div>
                   <div className="text-sm text-blue-700">
                     {selectedPlayer.realTeam} • {selectedPlayer.price} crediti
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={() => onPlayerConfirm(selectedPlayer.id)}
-                    disabled={isSelecting || disabled}
-                    className="w-full"
-                  >
+                  <Button size="sm" onClick={() => onPlayerConfirm(selectedPlayer.id)} disabled={isSelecting || disabled} className="w-full">
                     {isSelecting && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
                     {t("auction.confirmSelection")}
                   </Button>

@@ -6,12 +6,14 @@
 **Tipo**: Applicazione web per gestione aste fantacalcio  
 **Tecnologie**: Next.js 15, TypeScript, Prisma, PostgreSQL, NextAuth.js, Socket.io  
 **Creato**: 2025-08-01  
-**Stato**: Progettazione iniziale  
+**Stato**: Progettazione iniziale
 
 ### Descrizione
+
 Applicazione web che permette di gestire aste del fantacalcio con sistema di turni, selezioni simultanee e risoluzione conflitti tramite numeri casuali. Supporta da 4 a 8 squadre per lega, con autenticazione Google e aggiornamenti real-time.
 
 ### Funzionalità Principali
+
 - Creazione leghe fantacalcio (4-8 squadre)
 - Import calciatori da file Excel
 - Sistema aste a turni per ruolo (P/D/C/A)
@@ -21,14 +23,16 @@ Applicazione web che permette di gestire aste del fantacalcio con sistema di tur
 - Correzione manuale rose per admin
 
 ### Composizione Rosa
+
 - 3 Portieri (P)
-- 8 Difensori (D)  
+- 8 Difensori (D)
 - 8 Centrocampisti (C)
 - 6 Attaccanti (A)
 
 ## Stack Tecnologico
 
 ### Core
+
 - **Framework**: Next.js 15 (App Router)
 - **Linguaggio**: TypeScript
 - **Database**: PostgreSQL con Prisma ORM
@@ -37,6 +41,7 @@ Applicazione web che permette di gestire aste del fantacalcio con sistema di tur
 - **Styling**: Tailwind CSS + Shadcn/ui
 
 ### Dipendenze Aggiuntive
+
 - **xlsx**: Import file Excel
 - **zod**: Validazione dati
 - **react-hook-form**: Gestione form
@@ -57,7 +62,7 @@ model User {
   role          UserRole  @default(PLAYER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   // Relazioni
   adminLeagues  League[]  @relation("LeagueAdmin")
   teams         Team[]
@@ -73,7 +78,7 @@ model League {
   status      LeagueStatus @default(SETUP)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
+
   // Relazioni
   admin       User        @relation("LeagueAdmin", fields: [adminId], references: [id])
   teams       Team[]
@@ -87,18 +92,18 @@ model League {
 model Team {
   id              String    @id @default(cuid())
   name            String
-  userId          String    
+  userId          String
   leagueId        String
   remainingCredits Int
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  
+
   // Relazioni
   user            User      @relation(fields: [userId], references: [id])
   league          League    @relation(fields: [leagueId], references: [id])
   teamPlayers     TeamPlayer[]
   adminActions    AdminAction[] // Azioni admin su questa squadra
-  
+
   @@unique([userId, leagueId])
 }
 
@@ -113,7 +118,7 @@ model Player {
   isAssigned  Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
+
   // Relazioni
   league      League      @relation(fields: [leagueId], references: [id])
   teamPlayers TeamPlayer[]
@@ -127,11 +132,11 @@ model TeamPlayer {
   teamId      String
   playerId    String
   acquiredAt  DateTime  @default(now())
-  
+
   // Relazioni
   team        Team      @relation(fields: [teamId], references: [id])
   player      Player    @relation(fields: [playerId], references: [id])
-  
+
   @@unique([teamId, playerId])
 }
 
@@ -144,7 +149,7 @@ model AuctionRound {
   status      RoundStatus @default(SELECTION)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  
+
   // Relazioni
   league      League      @relation(fields: [leagueId], references: [id])
   selections  PlayerSelection[]
@@ -159,12 +164,12 @@ model PlayerSelection {
   randomNumber  Int?
   isWinner      Boolean   @default(false)
   createdAt     DateTime  @default(now())
-  
+
   // Relazioni
   round         AuctionRound @relation(fields: [roundId], references: [id])
   user          User      @relation(fields: [userId], references: [id])
   player        Player    @relation(fields: [playerId], references: [id])
-  
+
   @@unique([roundId, userId])
 }
 
@@ -201,7 +206,7 @@ model AuctionConfig {
   autoSelectOnTimeout Boolean @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   league          League   @relation(fields: [leagueId], references: [id])
 }
 
@@ -216,7 +221,7 @@ model AdminAction {
   reason      String?
   metadata    Json?       // Dati aggiuntivi azione
   createdAt   DateTime    @default(now())
-  
+
   league      League      @relation(fields: [leagueId], references: [id])
   admin       User        @relation(fields: [adminId], references: [id])
   targetTeam  Team?       @relation(fields: [targetTeamId], references: [id])
@@ -283,6 +288,7 @@ EasyAsta/
 ## Piano di Sviluppo
 
 ### Fase 1: Setup Iniziale (1-2 giorni)
+
 - [x] Creare CLAUDE.md progetto
 - [x] Inizializzare progetto Next.js 15 con TypeScript
 - [x] Configurare Prisma con PostgreSQL
@@ -291,6 +297,7 @@ EasyAsta/
 - [x] Configurare environment variables
 
 ### Fase 2: Database e Autenticazione (1 giorno)
+
 - [x] Implementare schema Prisma completo
 - [x] Creare migrazioni database
 - [x] Configurare NextAuth.js con Google Provider
@@ -298,6 +305,7 @@ EasyAsta/
 - [x] Test connessione database
 
 ### Fase 3: UI Base e Layout (1-2 giorni)
+
 - [x] Setup Shadcn/ui e Tailwind
 - [x] Creare layout base con navigazione
 - [x] Implementare componenti UI riutilizzabili
@@ -305,6 +313,7 @@ EasyAsta/
 - [x] Dashboard base per utenti
 
 ### Fase 4: Internazionalizzazione (1 giorno) ✅ COMPLETATA
+
 - [x] Configurare next-intl per supporto multilingue
 - [x] Creare file di traduzione completi (IT/FR)
 - [x] Implementare sistema traduzioni con useTranslations
@@ -313,6 +322,7 @@ EasyAsta/
 - [x] Test e correzione dependency arrays React Hook
 
 ### Fase 5: Gestione Leghe e Squadre (2 giorni)
+
 - [x] API e UI creazione leghe
 - [x] Sistema partecipazione a leghe
 - [x] Gestione squadre (4-8 per lega)
@@ -320,6 +330,7 @@ EasyAsta/
 - [x] Validazione regole composizione rosa
 
 ### Fase 6: Import e Gestione Calciatori (1 giorno)
+
 - [x] Upload file Excel
 - [x] Parser dati calciatori (Nome, Squadra, P/D/C/A, Prezzo)
 - [x] Validazione e import in database
@@ -327,6 +338,7 @@ EasyAsta/
 - [x] Lista calciatori con filtri
 
 ### Fase 7: Sistema Asta Core (3-4 giorni)
+
 - [x] Logica creazione turni per ruolo
 - [x] Sistema selezione simultanea calciatori
 - [x] Generazione numeri casuali per conflitti
@@ -335,6 +347,7 @@ EasyAsta/
 - [x] Gestione stati asta
 
 ### Fase 8: Real-time e Socket.io (2 giorni) ✅ COMPLETATA
+
 - [x] Configurazione server Socket.io
 - [x] Real-time updates selezioni
 - [x] Notifiche assegnazioni
@@ -342,6 +355,7 @@ EasyAsta/
 - [x] Gestione disconnessioni
 
 ### Fase 9: Funzionalità Admin Avanzate (2-3 giorni) ✅ COMPLETATA
+
 - [x] **Admin Selection per Conto Terzi**
   - [x] API selezione admin per squadre specifiche (/api/auction/admin-select)
   - [x] UI controlli admin con dropdown squadre
@@ -370,13 +384,13 @@ EasyAsta/
   - [x] Dashboard real-time stato asta (AdminControlPanel)
   - [x] Controlli configurazione timeout (/api/auction/timeout-config)
   - [x] Schema database esteso per funzionalità admin
-- [ ] **Sistema Timeout Automatico** (da implementare)
-  - [ ] Timer configurabile per selezioni (30s default)
-  - [ ] Countdown real-time per ogni squadra
-  - [ ] Auto-selezione automatica in caso di timeout
-  - [ ] Notifiche countdown e scadenza
+- [x] **Sistema Timeout Automatico** (RIMOSSO - Non richiesto)
+  - [x] Funzionalità timer rimossa per semplificare UX
+  - [x] Selezioni manuali senza pressione temporale
+  - [x] Focus su controllo admin e flessibilità
 
 ### Fase 10: Testing e Ottimizzazioni (1-2 giorni)
+
 - [ ] Test funzionalità complete
 - [ ] Test performance real-time
 - [ ] Ottimizzazioni database
@@ -384,6 +398,7 @@ EasyAsta/
 - [ ] Test responsive design
 
 ### Fase 11: Deploy (1 giorno)
+
 - [ ] Configurazione ambiente produzione
 - [ ] Deploy database PostgreSQL
 - [ ] Deploy su Vercel/Railway
@@ -393,19 +408,22 @@ EasyAsta/
 ## Todo List Corrente
 
 ### Priorità Alta
-- [ ] Inizializzare progetto Next.js 15
-- [ ] Configurare database PostgreSQL
-- [ ] Implementare autenticazione Google
+
+- [ ] Test funzionalità complete end-to-end
+- [ ] Test performance real-time con molti utenti
+- [ ] Validazione responsive design su dispositivi mobili
 
 ### Priorità Media
-- [ ] Setup UI components
-- [ ] Implementare logica asta
-- [ ] Configurare Socket.io
+
+- [ ] Ottimizzazioni database per performance
+- [ ] Gestione errori robusta
+- [ ] Configurazione ambiente produzione
 
 ### Priorità Bassa
-- [ ] Ottimizzazioni performance
-- [ ] Test end-to-end
-- [ ] Deploy produzione
+
+- [ ] Deploy su Vercel/Railway
+- [ ] Test ambiente produzione
+- [ ] Documentazione deploy finale
 
 ## Comandi Utili
 
@@ -435,6 +453,7 @@ npm run type-check
 ## Note Tecniche
 
 ### Decisioni Architetturali
+
 - **Next.js 15 App Router**: Per migliori performance e developer experience
 - **Prisma + PostgreSQL**: Per relazioni complesse e transazioni ACID
 - **Socket.io**: Per real-time senza polling
@@ -442,6 +461,7 @@ npm run type-check
 - **Shadcn/ui**: Per componenti consistenti e accessibili
 
 ### Flusso Asta (Aggiornato)
+
 1. Admin avvia l'asta (primo turno Portieri automatico)
 2. Tutti i giocatori vedono calciatori disponibili per il ruolo corrente
 3. Ogni giocatore seleziona un calciatore
@@ -455,6 +475,7 @@ npm run type-check
 11. Asta completata quando tutte le rose sono al completo (3P/8D/8C/6A)
 
 ### Validazioni Importanti
+
 - Rosa deve avere esattamente 3P, 8D, 8C, 6A
 - Crediti non possono andare in negativo
 - Solo admin può avviare turni
@@ -462,6 +483,7 @@ npm run type-check
 - Ruoli devono essere solo P, D, C, A
 
 ### Miglioramenti Implementati
+
 - ✅ **Flessibilità Turni**: Admin può scegliere qualsiasi ruolo per il turno successivo
 - ✅ **Statistiche Smart**: Modal con dati dettagliati per aiutare l'admin nella scelta
 - ✅ **Gestione Locale**: Redirect dinamici basati su locale corrente
@@ -470,6 +492,7 @@ npm run type-check
 - ✅ **Internazionalizzazione Completa**: Supporto multilingue IT/FR con next-intl
 
 ### Miglioramenti Futuri
+
 - ✅ ~~Sostituire polling con Socket.io per real-time~~ (COMPLETATO)
 - ✅ ~~Timeout per selezioni troppo lente~~ (IN IMPLEMENTAZIONE - Fase 9)
 - ✅ ~~Backup/restore stato asta~~ (IN PIANIFICAZIONE - Fase 9)
@@ -482,6 +505,7 @@ npm run type-check
 ### Architettura Admin Avanzata (Fase 9)
 
 #### API Routes da Implementare:
+
 ```typescript
 // Admin selection per conto terzi
 POST /api/auction/admin-select
@@ -515,6 +539,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 ```
 
 #### Componenti UI da Creare:
+
 - **AdminControlPanel**: Dashboard controlli principali
 - **TeamSelectionOverride**: Dropdown selezione per conto terzi
 - **TimeoutManager**: Configurazione e monitoraggio timeout
@@ -524,11 +549,13 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 ## Stato Attuale
 
 **Data ultimo aggiornamento**: 2025-08-03  
-**Fase corrente**: Fasi 1-9 completate + Audit Trail implementato  
-**Prossimo step**: Fase 10 - Testing e Ottimizzazioni  
+**Fase corrente**: Fasi 1-9 COMPLETATE AL 100% (timer rimosso per semplificare UX)  
+**Prossimo step**: Fase 10 - Testing e Ottimizzazioni
 
 ### Completato
+
 - [x] **Fase 1**: Setup Iniziale
+
   - [x] Definizione requisiti funzionali
   - [x] Design architettura sistema
   - [x] Schema database completo
@@ -540,12 +567,14 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] Installazione dipendenze core
 
 - [x] **Fase 2**: Database e Autenticazione
+
   - [x] Migrazioni database create e applicate
   - [x] Test connessione database
   - [x] Configurazione NextAuth.js con Google OAuth
   - [x] Middleware protezione route
 
 - [x] **Fase 3**: UI Base e Layout
+
   - [x] Setup Shadcn/ui e Tailwind CSS
   - [x] Layout base con navigazione
   - [x] Componenti UI riutilizzabili (Button, Card, Input)
@@ -554,6 +583,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] Sistema di routing protetto
 
 - [x] **Fase 5**: Gestione Leghe e Squadre
+
   - [x] API creazione leghe (POST /api/leagues)
   - [x] API partecipazione leghe (POST /api/leagues/join)
   - [x] API dettagli lega (GET /api/leagues/[id])
@@ -564,6 +594,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] Navigazione "Leghe" in navbar
 
 - [x] **Fase 6**: Import e Gestione Calciatori
+
   - [x] Upload file Excel con validazione formato
   - [x] Parser calciatori Excel (Nome, Squadra, P/D/C/A, Prezzo)
   - [x] Validazione e import database con transazioni
@@ -574,6 +605,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] Funzionalità eliminazione calciatori
 
 - [x] **Fase 7**: Sistema Asta Core
+
   - [x] API sistema asta (/api/auction, /api/auction/select, /api/auction/resolve)
   - [x] Logica creazione turni per ruolo (P/D/C/A)
   - [x] Sistema selezione simultanea calciatori
@@ -587,6 +619,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] ~~Polling real-time per aggiornamenti (temporaneo)~~ → Sostituito con Socket.io
 
 - [x] **Fase 4**: Internazionalizzazione (Completata)
+
   - [x] Configurazione next-intl per supporto multilingue
   - [x] Creazione file di traduzione completi (IT/FR)
   - [x] Traduzione di tutte le stringhe UI in italiano e francese
@@ -613,9 +646,10 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] Gestione riconnessioni automatiche e heartbeat
 
 #### Architettura Real-time Implementata:
+
 - **Server**: Custom server.js con Socket.io integrato in Next.js 15
 - **Client Hooks**: useSocketIO (connessioni) + useAuctionRealtime (stato asta)
-- **API Integration**: Eventi Socket.io in tutti i route /api/auction/*
+- **API Integration**: Eventi Socket.io in tutti i route /api/auction/\*
 - **Type Safety**: Interfacce TypeScript complete per tutti gli eventi
 - **Resilienza**: Fallback polling + riconnessioni automatiche
 
@@ -636,7 +670,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
     - [x] `/api/auction/bot-select`: Selezioni bot con audit completo
   - [x] **Database Schema Extensions**:
     - [x] AuctionConfig model: timeout, auto-select, pause settings
-    - [x] AdminAction model: logging completo azioni amministrative  
+    - [x] AdminAction model: logging completo azioni amministrative
     - [x] PlayerSelection: campi isAdminSelection e adminReason
     - [x] AdminActionType enum: 7 tipi azioni (SELECT, CANCEL, FORCE, etc.)
   - [x] **Integrazione Real-time**: Socket.io events per tutte le azioni admin
@@ -644,6 +678,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
   - [x] **Internazionalizzazione**: Traduzioni complete IT/FR per UI admin
 
 #### Funzionalità Admin Implementate:
+
 - **Selezione Conto Terzi**: Admin può selezionare calciatori per qualsiasi squadra
 - **Override Controls**: Annulla selezioni, forza risoluzione, reset turni
 - **Configurazione Asta**: Timeout personalizzabili, auto-selezione, pause
@@ -655,17 +690,22 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 - **Performance**: Eliminato polling costante, ridotto traffico del 80%
 
 ### In Corso
-- [ ] **Fase 10**: Testing e Ottimizzazioni
+
+- [ ] **Fase 10**: Sostituire gli any con dei tipi nel file lib/auction.ts
 
 ### Da Fare
-- Testing e Ottimizzazioni (Fase 10)
-- Deploy (Fase 11)
 
-## 📊 **Progresso Totale: ~92%**
+- Sostituire gli any con dei tipi nel file lib/auction.ts (Fase 10)
+- Refactoring delle funzioni e componenti più complesse (Fase 11)
+- Testing e Ottimizzazioni (Fase 12)
+- Deploy (Fase 13)
 
-### Fasi Completate: 9/11 (82%)
+## 📊 **Progresso Totale: ~95%**
+
+### Fasi Completate: 9/13 (69%) - Fase 9 COMPLETATA AL 100%
+
 - ✅ Fase 1: Setup Iniziale
-- ✅ Fase 2: Database e Autenticazione  
+- ✅ Fase 2: Database e Autenticazione
 - ✅ Fase 3: UI Base e Layout
 - ✅ Fase 4: Internazionalizzazione
 - ✅ Fase 5: Gestione Leghe e Squadre
@@ -675,6 +715,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 - ✅ Fase 9: Funzionalità Admin Avanzate
 
 ### Funzionalità Core: 100% ✅
+
 L'applicazione è **già utilizzabile** per aste fantacalcio real-time! Le prossime fasi aggiungeranno funzioni avanzate e ottimizzazioni.
 
 ---
