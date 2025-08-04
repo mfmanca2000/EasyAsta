@@ -28,7 +28,7 @@ export default function PlayersPage() {
   const t = useTranslations();
 
   // Custom hooks
-  const { league, loading: adminLoading, isAdmin, canModifyPlayers } = usePlayersAdmin({ leagueId });
+  const { league, loading: adminLoading, canModifyPlayers } = usePlayersAdmin({ leagueId });
   const { 
     players, 
     stats, 
@@ -36,7 +36,6 @@ export default function PlayersPage() {
     pagination, 
     sorting, 
     fetchPlayers, 
-    importPlayers, 
     deletePlayer, 
     goToPage, 
     nextPage, 
@@ -144,7 +143,10 @@ export default function PlayersPage() {
       </div>
 
       {/* Stats */}
-      <PlayersStats stats={stats} leagueStatus={league.status} />
+      <PlayersStats 
+        players={players} 
+        leagueStatus={league.status} 
+      />
 
       {/* Actions */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

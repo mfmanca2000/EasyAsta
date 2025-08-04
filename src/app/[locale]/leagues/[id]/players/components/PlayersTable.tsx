@@ -157,7 +157,7 @@ export default function PlayersTable({
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <TeamLogo team={player.realTeam} size="sm" />
+                      <TeamLogo teamName={player.realTeam} size={16} />
                       <span className="truncate">{player.realTeam}</span>
                     </div>
                   </TableCell>

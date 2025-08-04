@@ -1,28 +1,64 @@
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, UserX, TrendingUp } from "lucide-react";
 
+interface Player {
+  id: string;
+  name: string;
+  position: "P" | "D" | "C" | "A";
+  realTeam: string;
+  price: number;
+  isAssigned: boolean;
+}
+
 interface PlayersStatsProps {
-  stats: {
-    total: number;
-    assigned: number;
-    available: number;
-    byPosition: {
-      P: { total: number; assigned: number; available: number };
-      D: { total: number; assigned: number; available: number };
-      C: { total: number; assigned: number; available: number };
-      A: { total: number; assigned: number; available: number };
-    };
-    totalValue: number;
-    assignedValue: number;
-    availableValue: number;
-  };
+  players: Player[];
   leagueStatus: "SETUP" | "AUCTION" | "COMPLETED";
 }
 
-export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps) {
+export default function PlayersStats({ players, leagueStatus }: PlayersStatsProps) {
   const t = useTranslations();
+
+  // Calculate comprehensive stats from players data
+  const calculatedStats = useMemo(() => {
+    const total = players.length;
+    const assigned = players.filter(p => p.isAssigned).length;
+    const available = total - assigned;
+    
+    const totalValue = players.reduce((sum, p) => sum + p.price, 0);
+    const assignedValue = players.filter(p => p.isAssigned).reduce((sum, p) => sum + p.price, 0);
+    const availableValue = totalValue - assignedValue;
+
+    // Calculate by position
+    const byPosition = {
+      P: { total: 0, assigned: 0, available: 0 },
+      D: { total: 0, assigned: 0, available: 0 },
+      C: { total: 0, assigned: 0, available: 0 },
+      A: { total: 0, assigned: 0, available: 0 },
+    };
+
+    players.forEach(player => {
+      const pos = player.position;
+      byPosition[pos].total += 1;
+      if (player.isAssigned) {
+        byPosition[pos].assigned += 1;
+      } else {
+        byPosition[pos].available += 1;
+      }
+    });
+
+    return {
+      total,
+      assigned,
+      available,
+      totalValue,
+      assignedValue,
+      availableValue,
+      byPosition,
+    };
+  }, [players]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('it-IT').format(value);
@@ -48,9 +84,9 @@ export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps)
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.total}</div>
+          <div className="text-2xl font-bold">{calculatedStats.total}</div>
           <p className="text-xs text-muted-foreground">
-            {t('players.totalValue')}: {formatCurrency(stats.totalValue)}
+            {t('players.totalValue')}: {formatCurrency(calculatedStats.totalValue)}
           </p>
         </CardContent>
       </Card>
@@ -64,9 +100,9 @@ export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps)
           <UserX className="h-4 w-4 text-green-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">{stats.available}</div>
+          <div className="text-2xl font-bold text-green-600">{calculatedStats.available}</div>
           <p className="text-xs text-muted-foreground">
-            {t('players.value')}: {formatCurrency(stats.availableValue)}
+            {t('players.value')}: {formatCurrency(calculatedStats.availableValue)}
           </p>
         </CardContent>
       </Card>
@@ -80,9 +116,9 @@ export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps)
           <UserCheck className="h-4 w-4 text-blue-600" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{stats.assigned}</div>
+          <div className="text-2xl font-bold text-blue-600">{calculatedStats.assigned}</div>
           <p className="text-xs text-muted-foreground">
-            {t('players.value')}: {formatCurrency(stats.assignedValue)}
+            {t('players.value')}: {formatCurrency(calculatedStats.assignedValue)}
           </p>
         </CardContent>
       </Card>
@@ -100,9 +136,9 @@ export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps)
             {t(`league.status.${leagueStatus.toLowerCase()}`)}
           </Badge>
           <p className="text-xs text-muted-foreground mt-2">
-            {stats.assigned > 0 && (
+            {calculatedStats.assigned > 0 && (
               <>
-                {((stats.assigned / stats.total) * 100).toFixed(1)}% {t('players.completion')}
+                {((calculatedStats.assigned / calculatedStats.total) * 100).toFixed(1)}% {t('players.completion')}
               </>
             )}
           </p>
@@ -122,9 +158,9 @@ export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps)
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {(["P", "D", "C", "A"] as const).map((position) => {
-              const positionStats = stats.byPosition[position];
-              const percentage = positionStats.total > 0 
-                ? ((positionStats.assigned / positionStats.total) * 100).toFixed(1)
+              const positionData = calculatedStats.byPosition[position];
+              const percentage = positionData.total > 0 
+                ? ((positionData.assigned / positionData.total) * 100).toFixed(1)
                 : "0";
 
               return (
@@ -134,14 +170,14 @@ export default function PlayersStats({ stats, leagueStatus }: PlayersStatsProps)
                   </div>
                   <div className="space-y-1">
                     <div className="text-2xl font-bold">
-                      {positionStats.total}
+                      {positionData.total}
                     </div>
                     <div className="flex justify-center gap-2 text-sm">
                       <span className="text-green-600">
-                        {positionStats.available} {t('players.free')}
+                        {positionData.available} {t('players.free')}
                       </span>
                       <span className="text-blue-600">
-                        {positionStats.assigned} {t('players.taken')}
+                        {positionData.assigned} {t('players.taken')}
                       </span>
                     </div>
                     <div className="text-xs text-muted-foreground">
