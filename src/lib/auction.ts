@@ -134,9 +134,9 @@ async function processSelections(round: AuctionRound): Promise<ProcessSelections
   const teamsMap = new Map(allTeams.map((team) => [team.userId, team]));
 
   // Helper function to check if team can add a player of specific position
-  const canTeamAddPosition = (team: any, position: Position): boolean => {
+  const canTeamAddPosition = (team: { teamPlayers: Array<{ player: { position: Position } }> }, position: Position): boolean => {
     const positionCounts = { P: 0, D: 0, C: 0, A: 0 };
-    team.teamPlayers.forEach((tp: any) => {
+    team.teamPlayers.forEach((tp: { player: { position: Position } }) => {
       positionCounts[tp.player.position as keyof typeof positionCounts]++;
     });
     
