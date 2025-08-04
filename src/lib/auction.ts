@@ -1,11 +1,113 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 
-async function processSelections(round: any) {
-  // Raggruppa selezioni per calciatore
-  const playerSelections = new Map<string, typeof round.selections>();
+// Type definitions for auction-related data structures
+type Position = "P" | "D" | "C" | "A";
 
-  round.selections.forEach((selection: any) => {
+interface User {
+  id: string;
+  name?: string | null;
+  email: string;
+}
+
+interface Player {
+  id: string;
+  name: string;
+  position: Position;
+  realTeam: string;
+  price: number;
+  isAssigned: boolean;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  userId: string;
+  leagueId: string;
+  remainingCredits: number;
+}
+
+interface League {
+  id: string;
+  name: string;
+  adminId: string;
+  credits: number;
+  status: string;
+}
+
+interface PlayerSelection {
+  id: string;
+  roundId: string;
+  userId: string;
+  playerId: string;
+  randomNumber?: number | null;
+  isWinner: boolean;
+  user: User;
+  player: Player;
+}
+
+interface AuctionRound {
+  id: string;
+  leagueId: string;
+  position: Position;
+  roundNumber: number;
+  status: string;
+  league: League;
+  selections: PlayerSelection[];
+}
+
+interface Assignment {
+  playerId: string;
+  winnerId: string;
+  winnerName: string;
+  playerName: string;
+  price: number;
+  randomNumber?: number;
+}
+
+interface ConflictResult {
+  teamId: string;
+  teamName: string;
+  userName: string;
+  randomNumber: number;
+  isWinner: boolean;
+}
+
+interface Conflict {
+  playerId: string;
+  playerName: string;
+  price: number;
+  conflicts: ConflictResult[];
+}
+
+interface RandomResult {
+  selection: PlayerSelection;
+  team: Team;
+  randomNumber: number;
+}
+
+interface ProcessSelectionsResult {
+  assignments: Assignment[];
+  conflicts: Conflict[];
+  teamsWithAssignments: Set<string>;
+  allTeams: Team[];
+}
+
+interface ResolveRoundResult {
+  completedRound: AuctionRound;
+  assignments: Assignment[];
+  conflicts: Conflict[];
+  roundContinues: boolean;
+  canContinue: boolean;
+  teamsWithoutAssignments: Array<{ id: string; name: string }>;
+  message: string;
+}
+
+async function processSelections(round: AuctionRound): Promise<ProcessSelectionsResult> {
+  // Raggruppa selezioni per calciatore
+  const playerSelections = new Map<string, PlayerSelection[]>();
+
+  round.selections.forEach((selection: PlayerSelection) => {
     const playerId = selection.playerId;
     if (!playerSelections.has(playerId)) {
       playerSelections.set(playerId, []);
@@ -13,35 +115,34 @@ async function processSelections(round: any) {
     playerSelections.get(playerId)!.push(selection);
   });
 
-  const assignments: Array<{
-    playerId: string;
-    winnerId: string;
-    winnerName: string;
-    playerName: string;
-    price: number;
-    randomNumber?: number;
-  }> = [];
-
-  const conflicts: Array<{
-    playerId: string;
-    playerName: string;
-    price: number;
-    conflicts: Array<{
-      teamId: string;
-      teamName: string;
-      userName: string;
-      randomNumber: number;
-      isWinner: boolean;
-    }>;
-  }> = [];
+  const assignments: Assignment[] = [];
+  const conflicts: Conflict[] = [];
 
   const teamsWithAssignments = new Set<string>();
 
-  // Get all teams data once to avoid repeated queries
+  // Get all teams data with their current players once to avoid repeated queries
   const allTeams = await prisma.team.findMany({
     where: { leagueId: round.leagueId },
+    include: {
+      teamPlayers: {
+        include: {
+          player: true,
+        },
+      },
+    },
   });
   const teamsMap = new Map(allTeams.map((team) => [team.userId, team]));
+
+  // Helper function to check if team can add a player of specific position
+  const canTeamAddPosition = (team: any, position: Position): boolean => {
+    const positionCounts = { P: 0, D: 0, C: 0, A: 0 };
+    team.teamPlayers.forEach((tp: any) => {
+      positionCounts[tp.player.position as keyof typeof positionCounts]++;
+    });
+    
+    const maxByPosition = { P: 3, D: 8, C: 8, A: 6 };
+    return positionCounts[position] < maxByPosition[position];
+  };
 
   // Process each group of selections
   for (const [, selections] of playerSelections) {
@@ -50,7 +151,7 @@ async function processSelections(round: any) {
       const selection = selections[0];
       const team = teamsMap.get(selection.userId);
 
-      if (team && team.remainingCredits >= selection.player.price) {
+      if (team && team.remainingCredits >= selection.player.price && canTeamAddPosition(team, selection.player.position as Position)) {
         assignments.push({
           playerId: selection.playerId,
           winnerId: selection.userId,
@@ -62,21 +163,21 @@ async function processSelections(round: any) {
       }
     } else {
       // Conflict - generate random numbers
-      const validSelections = selections.filter((selection: any) => {
+      const validSelections = selections.filter((selection: PlayerSelection) => {
         const team = teamsMap.get(selection.userId);
-        return team && team.remainingCredits >= selection.player.price;
+        return team && team.remainingCredits >= selection.player.price && canTeamAddPosition(team, selection.player.position as Position);
       });
 
       if (validSelections.length > 0) {
         // Generate random numbers for valid selections
-        const randomResults = validSelections.map((selection: any) => ({
+        const randomResults: RandomResult[] = validSelections.map((selection: PlayerSelection) => ({
           selection,
           team: teamsMap.get(selection.userId)!,
           randomNumber: Math.floor(Math.random() * 1000) + 1,
         }));
 
         // Sort by random number (highest wins)
-        randomResults.sort((a: { randomNumber: number }, b: { randomNumber: number }) => b.randomNumber - a.randomNumber);
+        randomResults.sort((a: RandomResult, b: RandomResult) => b.randomNumber - a.randomNumber);
         const winner = randomResults[0];
 
         assignments.push({
@@ -95,7 +196,7 @@ async function processSelections(round: any) {
           playerId: winner.selection.playerId,
           playerName: winner.selection.player.name,
           price: winner.selection.player.price,
-          conflicts: randomResults.map((result: any) => ({
+          conflicts: randomResults.map((result: RandomResult) => ({
             teamId: result.team.id,
             teamName: result.team.name,
             userName: result.selection.user.name || result.selection.user.email || "Sconosciuto",
@@ -110,7 +211,7 @@ async function processSelections(round: any) {
   return { assignments, conflicts, teamsWithAssignments, allTeams };
 }
 
-export async function resolveRound(roundId: string) {
+export async function resolveRound(roundId: string): Promise<ResolveRoundResult> {
   // Get round data outside of transaction
   const round = await prisma.auctionRound.findFirst({
     where: { id: roundId },
@@ -288,7 +389,7 @@ async function checkIfAuctionCanContinue(tx: Prisma.TransactionClient, leagueId:
 }
 
 // Nuova funzione per creare il prossimo turno scelto dall'admin
-export async function createNextRound(leagueId: string, position: "P" | "D" | "C" | "A") {
+export async function createNextRound(leagueId: string, position: Position) {
   return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     // Verifica che non ci sia già un turno attivo
     const activeRound = await tx.auctionRound.findFirst({

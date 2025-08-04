@@ -20,7 +20,7 @@ export function getSocketIO(): Server | null {
 /**
  * Emit an event to a specific auction room
  */
-export function emitToAuctionRoom(leagueId: string, event: string, data: any): boolean {
+export function emitToAuctionRoom(leagueId: string, event: string, data: Record<string, unknown>): boolean {
   const io = getSocketIO()
   if (!io) {
     console.error(`[SOCKET] Cannot emit ${event} - Socket.io not available`)

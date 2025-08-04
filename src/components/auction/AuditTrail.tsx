@@ -13,7 +13,7 @@ interface AuditLog {
   id: string;
   action: string;
   reason?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   admin: {
     id: string;

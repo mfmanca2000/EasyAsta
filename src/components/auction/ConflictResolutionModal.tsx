@@ -84,7 +84,10 @@ export default function ConflictResolutionModal({
                           </div>
                         </div>
                         <Badge variant="default" className="bg-green-600">
-                          {t("auction.randomNumber")}: {winner.randomNumber}
+                          {t("auction.randomNumber", { 
+                            number: winner.randomNumber, 
+                            winner: `🏆` 
+                          })}
                         </Badge>
                       </div>
                     ))
@@ -108,7 +111,10 @@ export default function ConflictResolutionModal({
                           </div>
                         </div>
                         <Badge variant="outline" className="border-red-300 text-red-700">
-                          {t("auction.randomNumber")}: {loser.randomNumber}
+                          {t("auction.randomNumber", { 
+                            number: loser.randomNumber, 
+                            winner: `` 
+                          })}
                         </Badge>
                       </div>
                     ))

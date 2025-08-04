@@ -85,7 +85,17 @@
     "searchAuctions": "Cerca Aste",
     "stepJoinCreate": "Unisciti a una lega esistente o creane una nuova",
     "stepConfigureTeam": "Configura la tua squadra",
-    "stepParticipateAuctions": "Partecipa alle aste"
+    "stepParticipateAuctions": "Partecipa alle aste",
+    "totalLeagues": "Leghe Totali",
+    "totalTeams": "Squadre Totali",
+    "viewAllLeagues": "Visualizza Tutte le Leghe",
+    "joinAuction": "Partecipa all'Asta",
+    "viewAllAuctions": "Visualizza Tutte le Aste",
+    "quickActions": "Azioni Rapide",
+    "quickActionsDescription": "Accessi rapidi alle funzioni principali",
+    "browseLeagues": "Sfoglia Leghe",
+    "createLeague": "Crea Lega",
+    "manageLeagues": "Gestisci Leghe"
   },
   "leagues": {
     "title": "Le Mie Leghe",
@@ -257,6 +267,11 @@
   },
   "auction": {
     "title": "Asta Fantacalcio",
+    "status": {
+      "active": "Attiva",
+      "completed": "Completata",
+      "paused": "In pausa"
+    },
     "notStarted": "L'asta non è ancora iniziata",
     "noActiveRound": "Nessun turno attivo",
     "insufficientTeams": "Squadre insufficienti: Servono almeno 4 squadre per avviare l'asta. Attualmente: {count}/4 squadre.",

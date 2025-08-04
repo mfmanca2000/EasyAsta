@@ -85,7 +85,17 @@
     "searchAuctions": "Rechercher des Enchères",
     "stepJoinCreate": "Rejoignez une ligue existante ou créez-en une nouvelle",
     "stepConfigureTeam": "Configurez votre équipe",
-    "stepParticipateAuctions": "Participez aux enchères"
+    "stepParticipateAuctions": "Participez aux enchères",
+    "totalLeagues": "Ligues Totales",
+    "totalTeams": "Équipes Totales",
+    "viewAllLeagues": "Voir Toutes les Ligues",
+    "joinAuction": "Participer à l'Enchère",
+    "viewAllAuctions": "Voir Toutes les Enchères",
+    "quickActions": "Actions Rapides",
+    "quickActionsDescription": "Accès rapides aux fonctions principales",
+    "browseLeagues": "Parcourir les Ligues",
+    "createLeague": "Créer une Ligue",
+    "manageLeagues": "Gérer les Ligues"
   },
   "leagues": {
     "title": "Mes Ligues",
@@ -257,6 +267,11 @@
   },
   "auction": {
     "title": "Enchères Fantasy Football",
+    "status": {
+      "active": "Active",
+      "completed": "Terminée",
+      "paused": "En pause"
+    },
     "notStarted": "Les enchères n'ont pas encore commencé",
     "noActiveRound": "Aucun tour actif",
     "insufficientTeams": "Équipes insuffisantes : Il faut au moins 4 équipes pour démarrer les enchères. Actuellement : {count}/4 équipes.",
