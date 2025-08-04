@@ -549,8 +549,8 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 ## Stato Attuale
 
 **Data ultimo aggiornamento**: 2025-08-04  
-**Fase corrente**: Fasi 1-9 COMPLETATE AL 100% - Sistema pronto per testing  
-**Prossimo step**: Fase 10 - Testing e Ottimizzazioni finali
+**Fase corrente**: Fase 10 - Refactoring e Ottimizzazioni (IN CORSO)  
+**Prossimo step**: Refactoring sistematico componenti lunghi
 
 ### Completato
 
@@ -691,11 +691,13 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 
 ### In Corso
 
-- [ ] **Fase 10**: Testing e Ottimizzazioni finali
-  - [ ] Sostituzione dei tipi any con tipi specifici in lib/auction.ts
+- [ ] **Fase 10**: Refactoring e Ottimizzazioni
+  - [x] Refactoring AuctionPage.tsx (677 → 290 righe) ✅ COMPLETATO
+  - [x] Refactoring PlayersPage.tsx (532 → 207 righe) ✅ COMPLETATO
+  - [ ] Refactoring AdminControlPanel.tsx (511 righe) - PROSSIMO
+  - [ ] Refactoring BotManagementTab.tsx (345 righe)
   - [ ] Test funzionalità complete end-to-end
   - [ ] Validazione responsive design
-  - [ ] Ottimizzazione performance
 
 ### Da Fare
 
@@ -704,7 +706,7 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 - Preparazione deploy (Fase 12)
 - Deploy produzione (Fase 13)
 
-## 📊 **Progresso Totale: ~95%**
+## 📊 **Progresso Totale: ~97%**
 
 ### Fasi Completate: 9/13 (69%) - Fase 9 COMPLETATA AL 100%
 
@@ -721,6 +723,91 @@ GET /api/auction/audit-log?leagueId=xxx&limit=50
 ### Funzionalità Core: 100% ✅
 
 L'applicazione è **già utilizzabile** per aste fantacalcio real-time! Le prossime fasi aggiungeranno funzioni avanzate e ottimizzazioni.
+
+## 🔧 **Refactoring Sistematico - Piano e Progressi**
+
+### **Completati ✅**
+
+#### **AuctionPage.tsx (CRITICO)** - COMPLETATO 2025-08-04
+- **File**: `src/app/[locale]/leagues/[id]/auction/page.tsx`
+- **Prima**: 677 righe (CRITICAL - Troppo complesso)
+- **Dopo**: 290 righe (-57% righe, -387 righe totali)
+- **Estratti**: 
+  - **4 Custom Hooks**: `useAuctionAdmin`, `useAuctionActions`, `useNextRoundModal`, `useConflictResolution`
+  - **6 Componenti**: `AuctionHeader`, `AuctionStatusCard`, `CurrentSelectionsCard`, `AdminControlsCard`, `NoActiveRoundView`, `NextRoundModal`
+- **Status**: ✅ COMPLETATO
+- **Benefici**: Separazione responsabilità, testabilità migliorata, manutenibilità aumentata, type safety completo
+
+#### **PlayersPage.tsx (HIGH PRIORITY)** - COMPLETATO 2025-08-04
+- **File**: `src/app/[locale]/leagues/[id]/players/page.tsx`
+- **Prima**: 532 righe (HIGH - Mixing concerns multiple)
+- **Dopo**: 207 righe (-61% righe, -325 righe totali)
+- **Estratti**: 
+  - **3 Custom Hooks**: `usePlayersFilters`, `usePlayersImport`, `usePlayersAdmin`
+  - **5 Componenti**: `PlayersFilters`, `PlayersTable`, `PlayersImportForm`, `PlayersStats`, `PlayersActions`
+- **Status**: ✅ COMPLETATO
+- **Benefici**: Filtri avanzati separati, import Excel isolato, tabella riusabile, stats dashboard
+
+### **In Pianificazione 📋 (Priorità per dimensione e complessità)**
+
+#### **1. HIGH PRIORITY: AdminControlPanel.tsx (511 righe)**
+- **File**: `src/components/auction/AdminControlPanel.tsx`
+- **Problemi Identificati**:
+  - Mega-componente con 5 tab diversi
+  - 23 funzioni interne + 54 costrutti condizionali
+  - 12+ useState hooks (state management caotico)
+  - Multiple API integrations (admin-select, override, config, audit, bot)
+- **Piano Refactoring**:
+  - **Tab components**: `AdminSelectionTab.tsx`, `AdminOverrideTab.tsx`, `AdminConfigTab.tsx`, `AdminStatsTab.tsx`
+  - **Custom Hooks**: `useAdminActions()`, `useAdminConfig()`
+- **Tempo stimato**: 2-3 ore
+- **Target**: Riduzione a ~150 righe per componente principale
+- **Priorità**: **ALTA** (Componente critico con troppe responsabilità)
+
+#### **2. MEDIUM PRIORITY: BotManagementTab.tsx (345 righe)**
+- **File**: `src/components/auction/BotManagementTab.tsx`
+- **Problemi Identificati**:
+  - Single purpose ma logica interna complessa
+  - 15+ funzioni interne per gestione bot
+  - Complex state management: Config + status + selections
+  - API intensive con multiple endpoints bot-related
+- **Piano Refactoring**:
+  - **Componenti**: `BotConfigPanel.tsx`, `BotStatusList.tsx`, `BotSelectionControls.tsx`
+  - **Custom Hook**: `useBotManagement()`
+- **Tempo stimato**: 1-2 ore
+- **Target**: Riduzione a ~200 righe per componente principale
+- **Priorità**: **MEDIA** (Meno critico ma comunque da ottimizzare)
+
+### **Monitoraggio 👀 (File sotto controllo)**
+
+#### **leagues/page.tsx (346 righe)** - BASSA PRIORITÀ
+- **Motivo**: Gestisce solo create/join leagues, complessità accettabile
+- **Azione**: Monitorare, eventuale split create/join forms in futuro
+
+#### **roster/page.tsx (288 righe)** - OK
+- **Motivo**: Sotto soglia 300 righe, logica semplice
+- **Azione**: Nessuna immediata necessaria
+
+### **📊 Metriche Refactoring**
+
+| Metrica | Valore |
+|---------|--------|
+| **File refactorizzati** | 2/4 (50%) |
+| **Righe totali ridotte** | 712 righe |
+| **Riduzione percentuale media** | -59% (auction: -57%, players: -61%) |
+| **Componenti estratti** | 18 (7 hooks + 11 components) |
+| **Prossimo target** | AdminControlPanel.tsx (511 → ~150 righe) |
+| **Tempo investito** | ~6 ore (auction + players) |
+| **Tempo stimato rimanente** | 3-5 ore totali |
+
+### **🎯 Sequenza Refactoring Raccomandata**
+
+1. ✅ **Fase A** (COMPLETATA): `auction/page.tsx` → 677 a 290 righe (-57%)
+2. ✅ **Fase B** (COMPLETATA): `players/page.tsx` → 532 a 207 righe (-61%)
+3. **Fase C** (Prossima): `AdminControlPanel.tsx` → Target: 511 a ~150 righe  
+4. **Fase D** (Opzionale): `BotManagementTab.tsx` → Target: 345 a ~200 righe
+
+**Obiettivo finale**: Tutti i file sotto 250 righe con responsabilità ben separate.
 
 ---
 
