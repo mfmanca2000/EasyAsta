@@ -52,12 +52,12 @@ export default function RosterPage() {
   // Aggiorna la squadra selezionata quando la lega cambia (dopo delete)
   useEffect(() => {
     if (league && selectedTeam) {
-      const updatedTeam = league.teams.find(team => team.id === selectedTeam.id);
+      const updatedTeam = league.teams.find((team) => team.id === selectedTeam.id);
       if (updatedTeam) {
         setSelectedTeam(updatedTeam);
       }
     }
-  }, [league]);
+  }, [league, selectedTeam]);
 
   const isAdmin = league?.admin?.email === session?.user?.email;
 
@@ -78,17 +78,18 @@ export default function RosterPage() {
 
       const result = await response.json();
 
-      toast.success(t('roster.deleteSuccessDescription', { 
-        playerName: result.player.name,
-        teamName: selectedTeam.name 
-      }));
+      toast.success(
+        t("roster.deleteSuccessDescription", {
+          playerName: result.player.name,
+          teamName: selectedTeam.name,
+        })
+      );
 
       // Aggiorna la lega per riflettere le modifiche
       await fetchLeague();
-
     } catch (error) {
       console.error("Errore rimozione calciatore:", error);
-      toast.error(error instanceof Error ? error.message : t('roster.deleteErrorDescription'));
+      toast.error(error instanceof Error ? error.message : t("roster.deleteErrorDescription"));
     } finally {
       setDeletingPlayerId(null);
     }
@@ -139,7 +140,7 @@ export default function RosterPage() {
   };
 
   if (status === "loading" || loading) {
-    return <div className="flex justify-center items-center min-h-screen">{t('common.loading')}</div>;
+    return <div className="flex justify-center items-center min-h-screen">{t("common.loading")}</div>;
   }
 
   if (!league) {
@@ -147,8 +148,8 @@ export default function RosterPage() {
       <div className="container mx-auto px-4 py-8">
         <Card>
           <CardContent className="py-12 text-center">
-            <h3 className="text-lg font-semibold mb-2">{t('roster.leagueNotFoundTitle')}</h3>
-            <p className="text-muted-foreground">{t('roster.leagueNotFoundDescription')}</p>
+            <h3 className="text-lg font-semibold mb-2">{t("roster.leagueNotFoundTitle")}</h3>
+            <p className="text-muted-foreground">{t("roster.leagueNotFoundDescription")}</p>
           </CardContent>
         </Card>
       </div>
@@ -165,12 +166,12 @@ export default function RosterPage() {
         <Link href={`/leagues/${leagueId}`}>
           <Button variant="outline" size="sm">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('roster.backToLeague')}
+            {t("roster.backToLeague")}
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold">{t('roster.rosterTitle', { leagueName: league.name })}</h1>
-          <p className="text-muted-foreground">{t('roster.rosterDescription')}</p>
+          <h1 className="text-2xl font-bold">{t("roster.rosterTitle", { leagueName: league.name })}</h1>
+          <p className="text-muted-foreground">{t("roster.rosterDescription")}</p>
         </div>
       </div>
 
@@ -179,8 +180,8 @@ export default function RosterPage() {
         <div className="lg:col-span-1">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">{t('roster.selectTeam')}</CardTitle>
-              <CardDescription>{t('roster.selectTeamDescription')}</CardDescription>
+              <CardTitle className="text-lg">{t("roster.selectTeam")}</CardTitle>
+              <CardDescription>{t("roster.selectTeamDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               {league.teams.map((team) => {
@@ -194,10 +195,10 @@ export default function RosterPage() {
                     <div className="text-left w-full">
                       <div className="flex items-center justify-between mb-1">
                         <span className="font-semibold">{team.name}</span>
-                        {isUserTeam && <Badge variant="secondary">{t('roster.yourTeam')}</Badge>}
+                        {isUserTeam && <Badge variant="secondary">{t("roster.yourTeam")}</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground">{team.user.name}</div>
-                      <div className="text-xs mt-1">{t('roster.playersCount', { count: totalPlayers })}</div>
+                      <div className="text-xs mt-1">{t("roster.playersCount", { count: totalPlayers })}</div>
                       <div className="flex gap-1 mt-1">
                         <span className="text-xs">P:{teamComposition.P}</span>
                         <span className="text-xs">D:{teamComposition.D}</span>
@@ -225,9 +226,7 @@ export default function RosterPage() {
                         <Users className="h-5 w-5" />
                         {selectedTeam.name}
                       </CardTitle>
-                      <CardDescription>
-                        {t('roster.owner', { name: selectedTeam.user.name || selectedTeam.user.email, credits: selectedTeam.remainingCredits })}
-                      </CardDescription>
+                      <CardDescription>{t("roster.owner", { name: selectedTeam.user.name || selectedTeam.user.email, credits: selectedTeam.remainingCredits })}</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
@@ -236,22 +235,22 @@ export default function RosterPage() {
                     <div className="space-y-2">
                       {getPositionBadge("P")}
                       <div className={`text-lg font-bold ${composition.P === 3 ? "text-green-600" : "text-orange-600"}`}>{composition.P}/3</div>
-                      <div className="text-xs text-muted-foreground">{t('roster.positions.P')}</div>
+                      <div className="text-xs text-muted-foreground">{t("roster.positions.P")}</div>
                     </div>
                     <div className="space-y-2">
                       {getPositionBadge("D")}
                       <div className={`text-lg font-bold ${composition.D === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.D}/8</div>
-                      <div className="text-xs text-muted-foreground">{t('roster.positions.D')}</div>
+                      <div className="text-xs text-muted-foreground">{t("roster.positions.D")}</div>
                     </div>
                     <div className="space-y-2">
                       {getPositionBadge("C")}
                       <div className={`text-lg font-bold ${composition.C === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.C}/8</div>
-                      <div className="text-xs text-muted-foreground">{t('roster.positions.C')}</div>
+                      <div className="text-xs text-muted-foreground">{t("roster.positions.C")}</div>
                     </div>
                     <div className="space-y-2">
                       {getPositionBadge("A")}
                       <div className={`text-lg font-bold ${composition.A === 6 ? "text-green-600" : "text-orange-600"}`}>{composition.A}/6</div>
-                      <div className="text-xs text-muted-foreground">{t('roster.positions.A')}</div>
+                      <div className="text-xs text-muted-foreground">{t("roster.positions.A")}</div>
                     </div>
                   </div>
                 </CardContent>
@@ -264,7 +263,7 @@ export default function RosterPage() {
                     <div className="flex-1">
                       <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder={t('roster.searchPlaceholder')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                        <Input placeholder={t("roster.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                       </div>
                     </div>
                     <Select value={positionFilter} onValueChange={(value: "all" | "P" | "D" | "C" | "A") => setPositionFilter(value)}>
@@ -273,11 +272,11 @@ export default function RosterPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">{t('roster.allPositions')}</SelectItem>
-                        <SelectItem value="P">{t('roster.positions.P')}</SelectItem>
-                        <SelectItem value="D">{t('roster.positions.D')}</SelectItem>
-                        <SelectItem value="C">{t('roster.positions.C')}</SelectItem>
-                        <SelectItem value="A">{t('roster.positions.A')}</SelectItem>
+                        <SelectItem value="all">{t("roster.allPositions")}</SelectItem>
+                        <SelectItem value="P">{t("roster.positions.P")}</SelectItem>
+                        <SelectItem value="D">{t("roster.positions.D")}</SelectItem>
+                        <SelectItem value="C">{t("roster.positions.C")}</SelectItem>
+                        <SelectItem value="A">{t("roster.positions.A")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -287,7 +286,7 @@ export default function RosterPage() {
               {/* Lista Calciatori */}
               <Card>
                 <CardHeader>
-                  <CardTitle>{t('roster.rosterPlayers', { count: filteredPlayers.length })}</CardTitle>
+                  <CardTitle>{t("roster.rosterPlayers", { count: filteredPlayers.length })}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {filteredPlayers.length > 0 ? (
@@ -307,7 +306,7 @@ export default function RosterPage() {
                           <div className="flex items-center gap-3">
                             <div className="text-right">
                               <div className="font-semibold">{player.price}M</div>
-                              <div className="text-xs text-muted-foreground">{t('common.price')}</div>
+                              <div className="text-xs text-muted-foreground">{t("common.price")}</div>
                             </div>
                             {isAdmin && (
                               <Button
@@ -327,7 +326,7 @@ export default function RosterPage() {
                   ) : (
                     <div className="text-center py-8">
                       <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">{searchTerm || positionFilter !== "all" ? t('roster.noPlayersFound') : t('roster.noPlayersInRoster')}</p>
+                      <p className="text-muted-foreground">{searchTerm || positionFilter !== "all" ? t("roster.noPlayersFound") : t("roster.noPlayersInRoster")}</p>
                     </div>
                   )}
                 </CardContent>
@@ -337,8 +336,8 @@ export default function RosterPage() {
             <Card>
               <CardContent className="py-12 text-center">
                 <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t('roster.selectTeamTitle')}</h3>
-                <p className="text-muted-foreground">{t('roster.selectTeamText')}</p>
+                <h3 className="text-lg font-semibold mb-2">{t("roster.selectTeamTitle")}</h3>
+                <p className="text-muted-foreground">{t("roster.selectTeamText")}</p>
               </CardContent>
             </Card>
           )}
