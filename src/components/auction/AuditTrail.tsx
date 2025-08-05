@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RefreshCw, Target, Calendar, AlertCircle, UserCheck, Settings, RotateCcw, Shield } from "lucide-react";
+import { RefreshCw, Target, Calendar, AlertCircle, UserCheck, Settings, RotateCcw, Shield, User, UserPlus, Users, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
 interface AuditLog {
@@ -15,7 +15,8 @@ interface AuditLog {
   reason?: string;
   metadata?: Record<string, unknown>;
   createdAt: string;
-  admin: {
+  type: 'admin' | 'player';
+  actor: {
     id: string;
     name?: string;
     email: string;
@@ -29,6 +30,13 @@ interface AuditLog {
     };
   };
   player?: {
+    id: string;
+    name: string;
+    position: string;
+    realTeam: string;
+    price: number;
+  };
+  targetPlayer?: {
     id: string;
     name: string;
     position: string;
@@ -96,7 +104,23 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
     fetchAuditLogs(true);
   }, [leagueId, fetchAuditLogs]);
 
-  const getActionIcon = (action: string) => {
+  const getActionIcon = (action: string, type: 'admin' | 'player') => {
+    if (type === 'player') {
+      switch (action) {
+        case "PLAYER_SELECT":
+          return <User className="h-4 w-4 text-green-600" />;
+        case "JOIN_LEAGUE":
+          return <UserPlus className="h-4 w-4 text-blue-600" />;
+        case "CREATE_TEAM":
+          return <Users className="h-4 w-4 text-indigo-600" />;
+        case "LEAVE_LEAGUE":
+          return <LogOut className="h-4 w-4 text-red-600" />;
+        default:
+          return <User className="h-4 w-4 text-gray-600" />;
+      }
+    }
+
+    // Admin actions
     switch (action) {
       case "ADMIN_SELECT":
         return <UserCheck className="h-4 w-4 text-blue-600" />;
@@ -115,10 +139,26 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
     }
   };
 
-  const getActionBadge = (action: string) => {
+  const getActionBadge = (action: string, type: 'admin' | 'player') => {
+    if (type === 'player') {
+      switch (action) {
+        case "PLAYER_SELECT":
+          return <Badge variant="default" className="bg-green-600">Player Selection</Badge>;
+        case "JOIN_LEAGUE":
+          return <Badge variant="default" className="bg-blue-600">Joined</Badge>;
+        case "CREATE_TEAM":
+          return <Badge variant="default" className="bg-indigo-600">Team Created</Badge>;
+        case "LEAVE_LEAGUE":
+          return <Badge variant="destructive">Left</Badge>;
+        default:
+          return <Badge variant="outline">Player Action</Badge>;
+      }
+    }
+
+    // Admin actions
     switch (action) {
       case "ADMIN_SELECT":
-        return <Badge variant="default">Selection</Badge>;
+        return <Badge variant="default">Admin Selection</Badge>;
       case "CANCEL_SELECTION":
         return <Badge variant="destructive">Cancel</Badge>;
       case "FORCE_RESOLUTION":
@@ -130,7 +170,7 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
       case "EMERGENCY_PAUSE":
         return <Badge variant="secondary">Pause</Badge>;
       default:
-        return <Badge variant="outline">Unknown</Badge>;
+        return <Badge variant="outline">Admin Action</Badge>;
     }
   };
 
@@ -140,26 +180,42 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
   };
 
   const getActionDescription = (log: AuditLog) => {
-    const adminName = log.admin.name || log.admin.email;
+    const actorName = log.actor.name || log.actor.email;
     const teamName = log.targetTeam?.name;
-    const playerName = log.player?.name;
+    const playerName = log.player?.name || log.targetPlayer?.name;
     const roundInfo = log.round ? `Round ${log.round.roundNumber} (${log.round.position})` : "";
 
+    if (log.type === 'player') {
+      switch (log.action) {
+        case "PLAYER_SELECT":
+          return `${actorName} selected ${playerName} in ${roundInfo}`;
+        case "JOIN_LEAGUE":
+          return `${actorName} joined the league`;
+        case "CREATE_TEAM":
+          return `${actorName} created team ${teamName}`;
+        case "LEAVE_LEAGUE":
+          return `${actorName} left the league`;
+        default:
+          return `${actorName} performed ${log.action}`;
+      }
+    }
+
+    // Admin actions
     switch (log.action) {
       case "ADMIN_SELECT":
-        return `${adminName} selected ${playerName} for team ${teamName} in ${roundInfo}`;
+        return `${actorName} selected ${playerName} for team ${teamName} in ${roundInfo}`;
       case "CANCEL_SELECTION":
-        return `${adminName} cancelled selection for team ${teamName} in ${roundInfo}`;
+        return `${actorName} cancelled selection for team ${teamName} in ${roundInfo}`;
       case "FORCE_RESOLUTION":
-        return `${adminName} forced resolution of ${roundInfo}`;
+        return `${actorName} forced resolution of ${roundInfo}`;
       case "RESET_ROUND":
-        return `${adminName} reset ${roundInfo}`;
+        return `${actorName} reset ${roundInfo}`;
       case "TIMEOUT_CONFIG":
-        return `${adminName} updated timeout configuration`;
+        return `${actorName} updated timeout configuration`;
       case "EMERGENCY_PAUSE":
-        return `${adminName} triggered emergency pause`;
+        return `${actorName} triggered emergency pause`;
       default:
-        return `${adminName} performed ${log.action}`;
+        return `${actorName} performed ${log.action}`;
     }
   };
 
@@ -197,8 +253,8 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
         {auditLogs.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Shield className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No admin actions recorded yet</p>
-            <p className="text-sm mt-2">All admin actions will be logged here for transparency</p>
+            <p>No actions recorded yet</p>
+            <p className="text-sm mt-2">All admin and player actions will be logged here for transparency</p>
           </div>
         ) : (
           <ScrollArea className="h-[600px]">
@@ -207,10 +263,10 @@ export default function AuditTrail({ leagueId }: AuditTrailProps) {
                 <div key={log.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3 flex-1">
-                      <div className="mt-1">{getActionIcon(log.action)}</div>
+                      <div className="mt-1">{getActionIcon(log.action, log.type)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          {getActionBadge(log.action)}
+                          {getActionBadge(log.action, log.type)}
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Calendar className="h-3 w-3" />
                             {formatTimestamp(log.createdAt)}

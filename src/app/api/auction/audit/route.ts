@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Only league admin can access audit trail" }, { status: 403 });
     }
 
-    // Fetch audit trail logs
-    const auditLogs = await prisma.adminAction.findMany({
+    // Fetch admin actions
+    const adminActions = await prisma.adminAction.findMany({
       where: { leagueId },
       include: {
         admin: {
@@ -79,17 +79,75 @@ export async function GET(request: NextRequest) {
         },
       },
       orderBy: { createdAt: "desc" },
-      take: limit,
-      skip: offset,
     });
+
+    // Fetch player actions
+    const playerActions = await prisma.playerAction.findMany({
+      where: { leagueId },
+      include: {
+        player: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        targetTeam: {
+          select: {
+            id: true,
+            name: true,
+            user: {
+              select: {
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+        targetPlayer: {
+          select: {
+            id: true,
+            name: true,
+            position: true,
+            realTeam: true,
+            price: true,
+          },
+        },
+        round: {
+          select: {
+            id: true,
+            position: true,
+            roundNumber: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Combine and sort all actions by date
+    const allActions = [
+      ...adminActions.map(action => ({
+        ...action,
+        type: 'admin' as const,
+        actor: action.admin,
+      })),
+      ...playerActions.map(action => ({
+        ...action,
+        type: 'player' as const,
+        actor: action.player,
+      }))
+    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    // Apply pagination to combined results
+    const paginatedActions = allActions.slice(offset, offset + limit);
 
     // Get total count for pagination
-    const totalCount = await prisma.adminAction.count({
-      where: { leagueId },
-    });
+    const adminCount = await prisma.adminAction.count({ where: { leagueId } });
+    const playerCount = await prisma.playerAction.count({ where: { leagueId } });
+    const totalCount = adminCount + playerCount;
 
     return NextResponse.json({
-      auditLogs,
+      auditLogs: paginatedActions,
       totalCount,
       hasMore: offset + limit < totalCount,
     });

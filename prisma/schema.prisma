@@ -53,6 +53,7 @@ model User {
   isBot         Boolean           @default(false)
   accounts      Account[]
   adminActions  AdminAction[]     @relation("AdminUser")
+  playerActions PlayerAction[]    @relation("PlayerActionUser")
   adminLeagues  League[]          @relation("LeagueAdmin")
   selections    PlayerSelection[]
   sessions      Session[]
@@ -60,52 +61,55 @@ model User {
 }
 
 model League {
-  id           String         @id @default(cuid())
-  name         String
-  adminId      String
-  credits      Int            @default(500)
-  status       LeagueStatus   @default(SETUP)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  adminActions AdminAction[]
-  config       AuctionConfig?
-  rounds       AuctionRound[]
-  botConfig    BotConfig?
-  admin        User           @relation("LeagueAdmin", fields: [adminId], references: [id])
-  players      Player[]
-  teams        Team[]
+  id            String         @id @default(cuid())
+  name          String
+  adminId       String
+  credits       Int            @default(500)
+  status        LeagueStatus   @default(SETUP)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  adminActions  AdminAction[]
+  playerActions PlayerAction[]
+  config        AuctionConfig?
+  rounds        AuctionRound[]
+  botConfig     BotConfig?
+  admin         User           @relation("LeagueAdmin", fields: [adminId], references: [id])
+  players       Player[]
+  teams         Team[]
 }
 
 model Team {
-  id               String        @id @default(cuid())
+  id               String         @id @default(cuid())
   name             String
   userId           String
   leagueId         String
   remainingCredits Int
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-  adminActions     AdminAction[] @relation("AdminTargetTeam")
-  league           League        @relation(fields: [leagueId], references: [id])
-  user             User          @relation(fields: [userId], references: [id])
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  adminActions     AdminAction[]  @relation("AdminTargetTeam")
+  playerActions    PlayerAction[] @relation("PlayerActionTargetTeam")
+  league           League         @relation(fields: [leagueId], references: [id])
+  user             User           @relation(fields: [userId], references: [id])
   teamPlayers      TeamPlayer[]
 
   @@unique([userId, leagueId])
 }
 
 model Player {
-  id           String            @id @default(cuid())
-  name         String
-  position     Position
-  realTeam     String
-  price        Int
-  leagueId     String
-  isAssigned   Boolean           @default(false)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  adminActions AdminAction[]     @relation("AdminTargetPlayer")
-  league       League            @relation(fields: [leagueId], references: [id])
-  selections   PlayerSelection[]
-  teamPlayers  TeamPlayer[]
+  id            String            @id @default(cuid())
+  name          String
+  position      Position
+  realTeam      String
+  price         Int
+  leagueId      String
+  isAssigned    Boolean           @default(false)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  adminActions  AdminAction[]     @relation("AdminTargetPlayer")
+  playerActions PlayerAction[]    @relation("PlayerActionTargetPlayer")
+  league        League            @relation(fields: [leagueId], references: [id])
+  selections    PlayerSelection[]
+  teamPlayers   TeamPlayer[]
 }
 
 model TeamPlayer {
@@ -120,16 +124,17 @@ model TeamPlayer {
 }
 
 model AuctionRound {
-  id           String            @id @default(cuid())
-  leagueId     String
-  position     Position
-  roundNumber  Int
-  status       RoundStatus       @default(SELECTION)
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  adminActions AdminAction[]     @relation("AdminTargetRound")
-  league       League            @relation(fields: [leagueId], references: [id])
-  selections   PlayerSelection[]
+  id            String            @id @default(cuid())
+  leagueId      String
+  position      Position
+  roundNumber   Int
+  status        RoundStatus       @default(SELECTION)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  adminActions  AdminAction[]     @relation("AdminTargetRound")
+  playerActions PlayerAction[]    @relation("PlayerActionTargetRound")
+  league        League            @relation(fields: [leagueId], references: [id])
+  selections    PlayerSelection[]
 }
 
 model PlayerSelection {
@@ -178,6 +183,23 @@ model AdminAction {
   targetTeam   Team?           @relation("AdminTargetTeam", fields: [targetTeamId], references: [id])
 }
 
+model PlayerAction {
+  id           String            @id @default(cuid())
+  leagueId     String
+  playerId     String
+  action       PlayerActionType
+  targetTeamId String?
+  targetPlayerId String?
+  roundId      String?
+  metadata     Json?
+  createdAt    DateTime          @default(now())
+  league       League            @relation(fields: [leagueId], references: [id])
+  player       User              @relation("PlayerActionUser", fields: [playerId], references: [id])
+  targetTeam   Team?             @relation("PlayerActionTargetTeam", fields: [targetTeamId], references: [id])
+  targetPlayer Player?           @relation("PlayerActionTargetPlayer", fields: [targetPlayerId], references: [id])
+  round        AuctionRound?     @relation("PlayerActionTargetRound", fields: [roundId], references: [id])
+}
+
 model BotConfig {
   id                String          @id @default(cuid())
   leagueId          String          @unique
@@ -222,6 +244,13 @@ enum AdminActionType {
   TIMEOUT_CONFIG
   EMERGENCY_PAUSE
   BACKUP_RESTORE
+}
+
+enum PlayerActionType {
+  PLAYER_SELECT
+  JOIN_LEAGUE
+  CREATE_TEAM
+  LEAVE_LEAGUE
 }
 
 enum BotIntelligence {

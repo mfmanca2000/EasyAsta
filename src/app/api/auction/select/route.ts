@@ -96,20 +96,42 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Crea la selezione
-    const selection = await prisma.playerSelection.create({
-      data: {
-        roundId,
-        userId: userTeam.userId,
-        playerId
-      },
-      include: {
-        user: {
-          select: { id: true, name: true }
+    // Crea la selezione e log dell'azione player
+    const [selection] = await prisma.$transaction([
+      // Crea la selezione
+      prisma.playerSelection.create({
+        data: {
+          roundId,
+          userId: userTeam.userId,
+          playerId
         },
-        player: true
-      }
-    })
+        include: {
+          user: {
+            select: { id: true, name: true }
+          },
+          player: true
+        }
+      }),
+      // Log dell'azione player
+      prisma.playerAction.create({
+        data: {
+          leagueId: round.leagueId,
+          playerId: userTeam.userId,
+          action: 'PLAYER_SELECT',
+          targetTeamId: userTeam.id,
+          targetPlayerId: playerId,
+          roundId: roundId,
+          metadata: {
+            playerName: player.name,
+            playerPosition: player.position,
+            playerPrice: player.price,
+            teamName: userTeam.name,
+            roundNumber: round.roundNumber,
+            timestamp: new Date().toISOString()
+          }
+        }
+      })
+    ])
 
     // Emetti evento Socket.io per notificare la selezione
     if (globalThis.io) {

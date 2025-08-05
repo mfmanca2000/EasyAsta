@@ -102,6 +102,22 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Log dell'azione JOIN_LEAGUE
+    await prisma.playerAction.create({
+      data: {
+        leagueId: leagueId,
+        playerId: user.id,
+        action: 'JOIN_LEAGUE',
+        targetTeamId: team.id,
+        metadata: {
+          teamName: teamName,
+          leagueName: league.name,
+          credits: league.credits,
+          timestamp: new Date().toISOString()
+        }
+      }
+    });
+
     return NextResponse.json({ team }, { status: 201 });
   } catch (error) {
     if (error instanceof z.ZodError) {

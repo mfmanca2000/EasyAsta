@@ -33,6 +33,12 @@ export type AdminActionType =
   | "EMERGENCY_PAUSE"
   | "BACKUP_RESTORE";
 
+export type PlayerActionType = 
+  | "PLAYER_SELECT"
+  | "JOIN_LEAGUE"
+  | "CREATE_TEAM"
+  | "LEAVE_LEAGUE";
+
 // Common loading states
 export interface LoadingState {
   loading: boolean;

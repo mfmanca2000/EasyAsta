@@ -11,10 +11,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Users, Search, Filter } from "lucide-react";
+import { ArrowLeft, Users, Search, Filter, Trash2 } from "lucide-react";
 import { TeamLogo } from "@/components/ui/team-logo";
 import { Link } from "@/i18n/navigation";
 import { redirect } from "@/i18n/navigation";
+import { toast } from "sonner";
 
 export default function RosterPage() {
   const { data: session, status } = useSession();
@@ -26,6 +27,7 @@ export default function RosterPage() {
   const [selectedTeam, setSelectedTeam] = useState<TeamWithPlayers | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [positionFilter, setPositionFilter] = useState<"all" | "P" | "D" | "C" | "A">("all");
+  const [deletingPlayerId, setDeletingPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -46,6 +48,51 @@ export default function RosterPage() {
       }
     }
   }, [league, userTeam, selectedTeam]);
+
+  // Aggiorna la squadra selezionata quando la lega cambia (dopo delete)
+  useEffect(() => {
+    if (league && selectedTeam) {
+      const updatedTeam = league.teams.find(team => team.id === selectedTeam.id);
+      if (updatedTeam) {
+        setSelectedTeam(updatedTeam);
+      }
+    }
+  }, [league]);
+
+  const isAdmin = league?.admin?.email === session?.user?.email;
+
+  const handleDeletePlayer = async (playerId: string) => {
+    if (!selectedTeam || !isAdmin) return;
+
+    setDeletingPlayerId(playerId);
+
+    try {
+      const response = await fetch(`/api/teams/${selectedTeam.id}/players/${playerId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Errore durante la rimozione del calciatore");
+      }
+
+      const result = await response.json();
+
+      toast.success(t('roster.deleteSuccessDescription', { 
+        playerName: result.player.name,
+        teamName: selectedTeam.name 
+      }));
+
+      // Aggiorna la lega per riflettere le modifiche
+      await fetchLeague();
+
+    } catch (error) {
+      console.error("Errore rimozione calciatore:", error);
+      toast.error(error instanceof Error ? error.message : t('roster.deleteErrorDescription'));
+    } finally {
+      setDeletingPlayerId(null);
+    }
+  };
 
   const getPositionBadge = (position: "P" | "D" | "C" | "A") => {
     const colors = {
@@ -257,9 +304,22 @@ export default function RosterPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-right">
-                            <div className="font-semibold">{player.price}M</div>
-                            <div className="text-xs text-muted-foreground">{t('common.price')}</div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <div className="font-semibold">{player.price}M</div>
+                              <div className="text-xs text-muted-foreground">{t('common.price')}</div>
+                            </div>
+                            {isAdmin && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDeletePlayer(player.id)}
+                                disabled={deletingPlayerId === player.id}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         </div>
                       ))}

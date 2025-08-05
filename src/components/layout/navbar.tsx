@@ -32,11 +32,6 @@ export function Navbar() {
                 <Link href="/leagues">
                   <Button variant="ghost">{t('navigation.leagues')}</Button>
                 </Link>
-                {session.user?.role === "ADMIN" && (
-                  <Link href="/admin">
-                    <Button variant="ghost">{t('navigation.admin')}</Button>
-                  </Link>
-                )}
                 <div className="flex items-center space-x-2">
                   <span className="text-sm text-muted-foreground">{session.user?.name}</span>
                   <Button variant="outline" onClick={() => signOut()}>
