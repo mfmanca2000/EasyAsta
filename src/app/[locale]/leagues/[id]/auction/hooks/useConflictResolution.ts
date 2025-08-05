@@ -1,20 +1,10 @@
 import { useState } from "react";
+import { ConflictResolution } from "@/types";
 
 interface ConflictData {
   leagueId: string;
   roundId: string;
-  conflicts: Array<{
-    playerId: string;
-    playerName: string;
-    price: number;
-    conflicts: Array<{
-      teamId: string;
-      teamName: string;
-      userName: string;
-      randomNumber: number;
-      isWinner: boolean;
-    }>;
-  }>;
+  conflicts: ConflictResolution[];
   roundContinues: boolean;
   assignments: Array<{
     playerId: string;

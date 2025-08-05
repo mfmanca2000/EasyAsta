@@ -1,222 +1,51 @@
 import { useCallback, useEffect, useState } from "react";
 import { useSocketIO } from "./useSocketIO";
+import {
+  AuctionRound,
+  Player,
+  PlayerSelection,
+  TeamWithUser,
+  AuctionConfig,
+  PlayerSelectedEvent,
+  RoundResolvedEvent,
+  AuctionStateUpdateEvent,
+  NextRoundStartedEvent,
+  SOCKET_EVENTS,
+  PlayerSelectedSocketEvent,
+  RoundResolvedSocketEvent,
+  AdminPlayerSocketData,
+  AdminPlayerSelectedData,
+  RoundReadyData,
+  ConflictResolutionData,
+  RoundContinuesData,
+  AdminOverrideData,
+} from "@/types";
 
 interface AuctionState {
-  currentRound?: {
-    id: string;
-    position: "P" | "D" | "C" | "A";
-    roundNumber: number;
-    status: "SELECTION" | "RESOLUTION" | "COMPLETED";
-    selections: Array<{
-      id: string;
-      userId: string;
-      playerId: string;
-      isAdminSelection?: boolean;
-      adminReason?: string;
-      user: { id: string; name: string };
-      player: {
-        id: string;
-        name: string;
-        position: "P" | "D" | "C" | "A";
-        realTeam: string;
-        price: number;
-      };
-      randomNumber?: number;
-      isWinner: boolean;
-    }>;
+  currentRound?: AuctionRound & {
+    selections: PlayerSelection[];
   };
-  availablePlayers: Array<{
-    id: string;
-    name: string;
-    position: "P" | "D" | "C" | "A";
-    realTeam: string;
-    price: number;
-  }>;
-  userSelection?: {
-    id: string;
-    player: {
-      id: string;
-      name: string;
-      position: "P" | "D" | "C" | "A";
-      realTeam: string;
-      price: number;
-    };
-    randomNumber?: number;
-    isWinner: boolean;
-  };
-  teams?: Array<{
-    id: string;
-    name: string;
-    userId: string;
-    remainingCredits: number;
-    user: {
-      id: string;
-      name?: string;
-      email: string;
-    };
-  }>;
-  config?: {
-    timeoutSeconds: number;
-    autoSelectOnTimeout: boolean;
-    pauseOnDisconnect: boolean;
+  availablePlayers: Player[];
+  userSelection?: PlayerSelection;
+  teams?: TeamWithUser[];
+  config?: AuctionConfig & {
+    pauseOnDisconnect?: boolean;
   };
   hasActiveRound: boolean;
 }
 
-interface PlayerSelectedData {
-  selection: {
-    id: string;
-    user: { id: string; name: string };
-    player: {
-      id: string;
-      name: string;
-      position: "P" | "D" | "C" | "A";
-      realTeam: string;
-      price: number;
-    };
-  };
-  leagueId: string;
-  roundId: string;
-}
-
-interface AdminPlayerSelectedData {
-  selection: {
-    id: string;
-    user: { id: string; name: string };
-    player: {
-      id: string;
-      name: string;
-      position: "P" | "D" | "C" | "A";
-      realTeam: string;
-      price: number;
-    };
-  };
-  leagueId: string;
-  roundId: string;
-  isAdminAction: boolean;
-  adminReason: string;
-  targetTeam: {
-    id: string;
-    name: string;
-    userName: string;
-  };
-}
-
-interface RoundResolvedData {
-  leagueId: string;
-  roundId: string;
-  result: {
-    assignments: Array<{
-      teamId: string;
-      playerId: string;
-      playerName: string;
-      teamName: string;
-      price: number;
-    }>;
-    canContinue: boolean;
-  };
-  assignments: Array<{
-    teamId: string;
-    playerId: string;
-    playerName: string;
-    teamName: string;
-    price: number;
-  }>;
-  canContinue: boolean;
-}
-
-interface AuctionStartedData {
-  leagueId: string;
-  currentRound: {
-    id: string;
-    position: "P" | "D" | "C" | "A";
-    roundNumber: number;
-    status: "SELECTION" | "RESOLUTION" | "COMPLETED";
-  };
-  league: {
-    id: string;
-    name: string;
-    status: string;
-  };
-}
-
-interface NextRoundStartedData {
-  leagueId: string;
-  round: {
-    id: string;
-    position: "P" | "D" | "C" | "A";
-    roundNumber: number;
-    status: "SELECTION" | "RESOLUTION" | "COMPLETED";
-  };
-  position: string;
-  message: string;
-}
-
-interface RoundReadyData {
-  leagueId: string;
-  roundId: string;
-  message: string;
-}
-
-interface ConflictResolutionData {
-  leagueId: string;
-  roundId: string;
-  conflicts: Array<{
-    playerId: string;
-    playerName: string;
-    price: number;
-    conflicts: Array<{
-      teamId: string;
-      teamName: string;
-      userName: string;
-      randomNumber: number;
-      isWinner: boolean;
-    }>;
-  }>;
-  roundContinues: boolean;
-  assignments: Array<{
-    playerId: string;
-    winnerId: string;
-    winnerName: string;
-    playerName: string;
-    price: number;
-    randomNumber?: number;
-  }>;
-}
-
-interface RoundContinuesData {
-  leagueId: string;
-  roundId: string;
-  teamsWithoutAssignments: Array<{
-    id: string;
-    name: string;
-  }>;
-  message: string;
-}
-
-interface AdminOverrideData {
-  leagueId: string;
-  roundId: string;
-  action: "cancel-selection" | "force-resolution" | "reset-round";
-  result: {
-    action: string;
-    message: string;
-    cancelledPlayer?: string;
-  };
-  reason: string;
-  adminName: string;
-}
+// All socket event interfaces are now centralized in @/types
 
 interface UseAuctionRealtimeProps {
   leagueId: string;
   userId?: string;
   userName?: string;
   initialState?: AuctionState | null;
-  onPlayerSelected?: (data: PlayerSelectedData) => void;
+  onPlayerSelected?: (data: PlayerSelectedEvent) => void;
   onAdminPlayerSelected?: (data: AdminPlayerSelectedData) => void;
-  onRoundResolved?: (data: RoundResolvedData) => void;
-  onAuctionStarted?: (data: AuctionStartedData) => void;
-  onNextRoundStarted?: (data: NextRoundStartedData) => void;
+  onRoundResolved?: (data: RoundResolvedEvent) => void;
+  onAuctionStarted?: (data: AuctionStateUpdateEvent) => void;
+  onNextRoundStarted?: (data: NextRoundStartedEvent) => void;
   onRoundReadyForResolution?: (data: RoundReadyData) => void;
   onConflictResolution?: (data: ConflictResolutionData) => void;
   onRoundContinues?: (data: RoundContinuesData) => void;
@@ -278,21 +107,74 @@ export function useAuctionRealtime({
     if (!socket || !isConnected) return;
 
     // Player selection event
-    const handlePlayerSelected = (data: PlayerSelectedData) => {
+    const handlePlayerSelected = (data: PlayerSelectedSocketEvent) => {
       console.log("[CLIENT] Player selected received:", data);
       console.log("[CLIENT] Calling refreshAuctionState...");
       refreshAuctionState();
       console.log("[CLIENT] Calling onPlayerSelected callback...");
-      onPlayerSelected?.(data);
+
+      // Convert to PlayerSelectedEvent format for callback
+      const playerSelectedEvent: PlayerSelectedEvent = {
+        leagueId: data.leagueId,
+        roundId: data.roundId,
+        timestamp: new Date(),
+        selection: {
+          id: data.selection.id,
+          roundId: data.roundId,
+          userId: data.selection.user.id,
+          playerId: data.selection.player.id,
+          isWinner: false,
+          createdAt: new Date(),
+          player: data.selection.player,
+          user: {
+            id: data.selection.user.id,
+            name: data.selection.user.name,
+            email: data.selection.user.name, // Fallback since we don't have email
+          },
+        },
+        userId: data.selection.user.id,
+        playerName: data.selection.player.name,
+        teamName: data.selection.user.name,
+      };
+
+      onPlayerSelected?.(playerSelectedEvent);
     };
 
     // Admin player selection event
-    const handleAdminPlayerSelected = (data: AdminPlayerSelectedData) => {
+    const handleAdminPlayerSelected = (data: AdminPlayerSocketData) => {
       console.log("[CLIENT] Admin player selected received:", data);
       console.log("[CLIENT] Calling refreshAuctionState...");
       refreshAuctionState();
       console.log("[CLIENT] Calling onAdminPlayerSelected callback...");
-      onAdminPlayerSelected?.(data);
+
+      // Convert to AdminPlayerSelectedData format for callback
+      const adminPlayerSelectedEvent: AdminPlayerSelectedData = {
+        leagueId: data.leagueId,
+        roundId: data.roundId,
+        timestamp: new Date(),
+        selection: {
+          id: data.selection.id,
+          roundId: data.roundId,
+          userId: data.selection.user.id,
+          playerId: data.selection.player.id,
+          isWinner: false,
+          createdAt: new Date(),
+          player: data.selection.player,
+          user: {
+            id: data.selection.user.id,
+            name: data.selection.user.name,
+            email: data.selection.user.name, // Fallback since we don't have email
+          },
+        },
+        userId: data.selection.user.id,
+        playerName: data.selection.player.name,
+        teamName: data.targetTeam.name,
+        isAdminAction: data.isAdminAction,
+        adminReason: data.adminReason,
+        targetTeam: data.targetTeam,
+      };
+
+      onAdminPlayerSelected?.(adminPlayerSelectedEvent);
     };
 
     // Round ready for resolution
@@ -303,10 +185,21 @@ export function useAuctionRealtime({
     };
 
     // Round resolved event
-    const handleRoundResolved = (data: RoundResolvedData) => {
+    const handleRoundResolved = (data: RoundResolvedSocketEvent) => {
       console.log("Round resolved:", data);
       refreshAuctionState();
-      onRoundResolved?.(data);
+
+      // Convert to app-level RoundResolvedEvent format if callback exists
+      if (onRoundResolved) {
+        const roundResolvedEvent: RoundResolvedEvent = {
+          leagueId: data.leagueId,
+          roundId: data.roundId,
+          timestamp: new Date(),
+          assignments: data.assignments || [],
+          canContinue: data.canContinue,
+        };
+        onRoundResolved(roundResolvedEvent);
+      }
     };
 
     // Conflict resolution event
@@ -324,14 +217,34 @@ export function useAuctionRealtime({
     };
 
     // Auction started event
-    const handleAuctionStarted = (data: AuctionStartedData) => {
+    const handleAuctionStarted = (data: {
+      leagueId: string;
+      currentRound: {
+        id: string;
+        position: "P" | "D" | "C" | "A";
+        roundNumber: number;
+        status: "SELECTION" | "RESOLUTION" | "COMPLETED";
+      };
+      league: {
+        id: string;
+        name: string;
+      };
+    }) => {
       console.log("Auction started:", data);
       refreshAuctionState();
-      onAuctionStarted?.(data);
+      // Convert to AuctionStateUpdateEvent format for callback
+      const auctionStateEvent: AuctionStateUpdateEvent = {
+        leagueId: data.leagueId,
+        roundId: data.currentRound?.id,
+        timestamp: new Date(),
+        status: "AUCTION",
+        currentRound: data.currentRound,
+      };
+      onAuctionStarted?.(auctionStateEvent);
     };
 
     // Next round started event
-    const handleNextRoundStarted = (data: NextRoundStartedData) => {
+    const handleNextRoundStarted = (data: NextRoundStartedEvent) => {
       console.log("Next round started:", data);
       refreshAuctionState();
       onNextRoundStarted?.(data);
@@ -370,7 +283,7 @@ export function useAuctionRealtime({
     // Admin override event - special handling for round-reset
     const handleAdminOverride = (data: AdminOverrideData) => {
       console.log("Admin override:", data);
-      
+
       // For round-reset, we need to refresh state completely since the round might be deleted
       if (data.action === "reset-round") {
         // Clear current state and refresh
@@ -383,42 +296,42 @@ export function useAuctionRealtime({
         // For other actions, just refresh normally
         refreshAuctionState();
       }
-      
+
       onAdminOverride?.(data);
     };
 
-    // Register event listeners
-    on("player-selected", handlePlayerSelected);
-    on("admin-player-selected", handleAdminPlayerSelected);
-    on("round-ready-for-resolution", handleRoundReadyForResolution);
-    on("round-resolved", handleRoundResolved);
-    on("conflict-resolution", handleConflictResolution);
-    on("round-continues", handleRoundContinues);
+    // Register event listeners using centralized constants
+    on(SOCKET_EVENTS.PLAYER_SELECTED, handlePlayerSelected);
+    on(SOCKET_EVENTS.ADMIN_PLAYER_SELECTED, handleAdminPlayerSelected);
+    on(SOCKET_EVENTS.ROUND_READY_FOR_RESOLUTION, handleRoundReadyForResolution);
+    on(SOCKET_EVENTS.ROUND_RESOLVED, handleRoundResolved);
+    on(SOCKET_EVENTS.CONFLICT_RESOLUTION, handleConflictResolution);
+    on(SOCKET_EVENTS.ROUND_CONTINUES, handleRoundContinues);
     on("auction-started", handleAuctionStarted);
-    on("next-round-started", handleNextRoundStarted);
-    on("admin-override", handleAdminOverride);
+    on(SOCKET_EVENTS.NEXT_ROUND_STARTED, handleNextRoundStarted);
+    on(SOCKET_EVENTS.ADMIN_OVERRIDE, handleAdminOverride);
     on("user-joined", handleUserJoined);
-    on("user-left", handleUserLeft);
-    on("user-disconnected", handleUserDisconnected);
-    on("user-timeout", handleUserTimeout);
-    on("users-online", handleUsersOnline);
+    on(SOCKET_EVENTS.USER_LEFT, handleUserLeft);
+    on(SOCKET_EVENTS.USER_DISCONNECTED, handleUserDisconnected);
+    on(SOCKET_EVENTS.USER_TIMEOUT, handleUserTimeout);
+    on(SOCKET_EVENTS.USERS_ONLINE, handleUsersOnline);
 
     // Cleanup event listeners on unmount
     return () => {
-      off("player-selected", handlePlayerSelected);
-      off("admin-player-selected", handleAdminPlayerSelected);
-      off("round-ready-for-resolution", handleRoundReadyForResolution);
-      off("round-resolved", handleRoundResolved);
-      off("conflict-resolution", handleConflictResolution);
-      off("round-continues", handleRoundContinues);
+      off(SOCKET_EVENTS.PLAYER_SELECTED, handlePlayerSelected);
+      off(SOCKET_EVENTS.ADMIN_PLAYER_SELECTED, handleAdminPlayerSelected);
+      off(SOCKET_EVENTS.ROUND_READY_FOR_RESOLUTION, handleRoundReadyForResolution);
+      off(SOCKET_EVENTS.ROUND_RESOLVED, handleRoundResolved);
+      off(SOCKET_EVENTS.CONFLICT_RESOLUTION, handleConflictResolution);
+      off(SOCKET_EVENTS.ROUND_CONTINUES, handleRoundContinues);
       off("auction-started", handleAuctionStarted);
-      off("next-round-started", handleNextRoundStarted);
-      off("admin-override", handleAdminOverride);
+      off(SOCKET_EVENTS.NEXT_ROUND_STARTED, handleNextRoundStarted);
+      off(SOCKET_EVENTS.ADMIN_OVERRIDE, handleAdminOverride);
       off("user-joined", handleUserJoined);
-      off("user-left", handleUserLeft);
-      off("user-disconnected", handleUserDisconnected);
-      off("user-timeout", handleUserTimeout);
-      off("users-online", handleUsersOnline);
+      off(SOCKET_EVENTS.USER_LEFT, handleUserLeft);
+      off(SOCKET_EVENTS.USER_DISCONNECTED, handleUserDisconnected);
+      off(SOCKET_EVENTS.USER_TIMEOUT, handleUserTimeout);
+      off(SOCKET_EVENTS.USERS_ONLINE, handleUsersOnline);
     };
   }, [
     socket,

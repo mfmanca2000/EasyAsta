@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useLeague, Team } from "@/hooks/useLeague";
+import { useLeague } from "@/hooks/useLeague";
+import { TeamWithPlayers } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +23,7 @@ export default function RosterPage() {
   const locale = params.locale as string;
   const t = useTranslations();
   const { league, userTeam, loading, fetchLeague } = useLeague(leagueId);
-  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<TeamWithPlayers | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [positionFilter, setPositionFilter] = useState<"all" | "P" | "D" | "C" | "A">("all");
 
@@ -57,7 +58,7 @@ export default function RosterPage() {
     return <Badge className={colors[position]}>{position}</Badge>;
   };
 
-  const getRosterComposition = (team: Team) => {
+  const getRosterComposition = (team: TeamWithPlayers) => {
     const composition = { P: 0, D: 0, C: 0, A: 0 };
     team.teamPlayers.forEach((tp) => {
       composition[tp.player.position]++;
@@ -178,7 +179,7 @@ export default function RosterPage() {
                         {selectedTeam.name}
                       </CardTitle>
                       <CardDescription>
-                        {t('roster.owner', { name: selectedTeam.user.name, credits: selectedTeam.remainingCredits })}
+                        {t('roster.owner', { name: selectedTeam.user.name || selectedTeam.user.email, credits: selectedTeam.remainingCredits })}
                       </CardDescription>
                     </div>
                   </div>

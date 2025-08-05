@@ -65,7 +65,7 @@ export default function AuctionPage() {
       addToast({
         type: "info",
         title: t("auction.playerSelectedToast"),
-        description: `${selection.user.name} → ${selection.player.name}`,
+        description: `${selection.user?.name} → ${selection.player?.name}`,
         duration: 3000,
       });
     },
@@ -74,7 +74,7 @@ export default function AuctionPage() {
       addToast({
         type: "info",
         title: t("auction.adminPlayerSelectedToast"),
-        description: `Admin → ${selection.player.name} per ${targetTeam.name}`,
+        description: `Admin → ${selection.player?.name} per ${targetTeam.name}`,
         duration: 4000,
       });
     },

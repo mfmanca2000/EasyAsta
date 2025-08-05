@@ -3,13 +3,20 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseExcelFile, validatePlayerList } from "@/lib/excel-parser";
+import { ApiResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Non autenticato",
+          success: false,
+        } as ApiResponse,
+        { status: 401 }
+      );
     }
 
     // Ottieni i dati dal form
@@ -18,16 +25,34 @@ export async function POST(request: NextRequest) {
     const leagueId = formData.get("leagueId") as string;
 
     if (!file) {
-      return NextResponse.json({ error: "File Excel richiesto" }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "File Excel richiesto",
+          success: false,
+        } as ApiResponse,
+        { status: 400 }
+      );
     }
 
     if (!leagueId) {
-      return NextResponse.json({ error: "ID lega richiesto" }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "ID lega richiesto",
+          success: false,
+        } as ApiResponse,
+        { status: 400 }
+      );
     }
 
     // Verifica tipo file
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      return NextResponse.json({ error: "Formato file non supportato. Utilizzare .xlsx o .xls" }, { status: 400 });
+    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+      return NextResponse.json(
+        {
+          error: "Formato file non supportato. Utilizzare .xlsx o .xls",
+          success: false,
+        } as ApiResponse,
+        { status: 400 }
+      );
     }
 
     // Trova l'utente nel database
@@ -36,7 +61,13 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
+      return NextResponse.json(
+        {
+          error: "Utente non trovato",
+          success: false,
+        } as ApiResponse,
+        { status: 404 }
+      );
     }
 
     // Verifica che l'utente sia admin della lega
@@ -61,20 +92,26 @@ export async function POST(request: NextRequest) {
     const parseResult = parseExcelFile(buffer);
 
     if (!parseResult.success) {
-      return NextResponse.json({ 
-        error: "Errori nel parsing del file", 
-        details: parseResult.errors 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Errori nel parsing del file",
+          details: parseResult.errors,
+        },
+        { status: 400 }
+      );
     }
 
     // Validazione aggiuntiva
     const validationErrors = validatePlayerList(parseResult.players);
     if (validationErrors.length > 0) {
-      return NextResponse.json({ 
-        error: "Errori di validazione", 
-        details: validationErrors,
-        warning: true 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Errori di validazione",
+          details: validationErrors,
+          warning: true,
+        },
+        { status: 400 }
+      );
     }
 
     // Transazione per eliminare e reinserire calciatori
@@ -96,17 +133,19 @@ export async function POST(request: NextRequest) {
       return createdPlayers;
     });
 
-    return NextResponse.json({ 
-      message: "Calciatori importati con successo", 
-      count: result.count,
-      summary: {
-        portieri: parseResult.players.filter(p => p.position === 'P').length,
-        difensori: parseResult.players.filter(p => p.position === 'D').length,
-        centrocampisti: parseResult.players.filter(p => p.position === 'C').length,
-        attaccanti: parseResult.players.filter(p => p.position === 'A').length,
-      }
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        message: "Calciatori importati con successo",
+        count: result.count,
+        summary: {
+          portieri: parseResult.players.filter((p) => p.position === "P").length,
+          difensori: parseResult.players.filter((p) => p.position === "D").length,
+          centrocampisti: parseResult.players.filter((p) => p.position === "C").length,
+          attaccanti: parseResult.players.filter((p) => p.position === "A").length,
+        },
+      },
+      { status: 201 }
+    );
   } catch (error) {
     console.error("Errore import calciatori:", error);
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 });

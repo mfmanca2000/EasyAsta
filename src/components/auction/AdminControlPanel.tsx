@@ -11,6 +11,7 @@ import AdminStatusOverview from "./AdminStatusOverview";
 import AdminSelectionTab from "./AdminSelectionTab";
 import AdminOverrideTab from "./AdminOverrideTab";
 import AdminConfigTab from "./AdminConfigTab";
+import { Player, PlayerSelection, TeamWithUser, AuctionConfig } from "@/types";
 
 interface AdminControlPanelProps {
   leagueId: string;
@@ -20,48 +21,11 @@ interface AdminControlPanelProps {
     status: string;
     roundNumber: number;
   };
-  teams: Array<{
-    id: string;
-    name: string;
-    userId: string;
-    remainingCredits: number;
-    user: {
-      id: string;
-      name?: string;
-      email: string;
-    };
-  }>;
-  availablePlayers: Array<{
-    id: string;
-    name: string;
-    position: string;
-    realTeam: string;
-    price: number;
-  }>;
-  selections: Array<{
-    id: string;
-    userId: string;
-    playerId: string;
-    isAdminSelection?: boolean;
-    adminReason?: string;
-    user: {
-      id: string;
-      name?: string;
-    };
-    player: {
-      id: string;
-      name: string;
-      position: string;
-      realTeam: string;
-      price: number;
-    };
-    randomNumber?: number;
-    isWinner: boolean;
-  }>;
-  config?: {
-    timeoutSeconds: number;
-    autoSelectOnTimeout: boolean;
-    pauseOnDisconnect: boolean;
+  teams: TeamWithUser[];
+  availablePlayers: Player[];
+  selections: PlayerSelection[];
+  config?: AuctionConfig & {
+    pauseOnDisconnect?: boolean;
   };
 }
 
@@ -85,12 +49,7 @@ export default function AdminControlPanel({ leagueId, currentRound, teams, avail
   return (
     <div className="space-y-6">
       {/* Status Overview */}
-      <AdminStatusOverview
-        currentRound={currentRound}
-        teams={teams}
-        selections={selections}
-        availablePlayers={availablePlayers}
-      />
+      <AdminStatusOverview currentRound={currentRound} teams={teams} selections={selections} availablePlayers={availablePlayers} />
 
       {/* Control Tabs */}
       <div className="flex gap-2 border-b">
@@ -109,30 +68,13 @@ export default function AdminControlPanel({ leagueId, currentRound, teams, avail
       </div>
 
       {/* Admin Selection Tab */}
-      {activeTab === "select" && (
-        <AdminSelectionTab
-          currentRound={currentRound}
-          teamsWithoutSelection={teamsWithoutSelection}
-          availablePlayers={availablePlayers}
-        />
-      )}
+      {activeTab === "select" && <AdminSelectionTab currentRound={currentRound} teamsWithoutSelection={teamsWithoutSelection} availablePlayers={availablePlayers} />}
 
       {/* Override Controls Tab */}
-      {activeTab === "override" && (
-        <AdminOverrideTab
-          currentRound={currentRound}
-          teamsWithSelection={teamsWithSelection}
-          selections={selections}
-        />
-      )}
+      {activeTab === "override" && <AdminOverrideTab currentRound={currentRound} teamsWithSelection={teamsWithSelection} selections={selections} />}
 
       {/* Configuration Tab */}
-      {activeTab === "config" && (
-        <AdminConfigTab
-          leagueId={leagueId}
-          initialConfig={config}
-        />
-      )}
+      {activeTab === "config" && <AdminConfigTab leagueId={leagueId} initialConfig={config} />}
 
       {/* Bot and Audit Tabs */}
       {activeTab === "bot" && <BotManagementTab leagueId={leagueId} currentRound={currentRound} />}

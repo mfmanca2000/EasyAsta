@@ -3,39 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield } from "lucide-react";
-
-interface Team {
-  id: string;
-  name: string;
-  userId: string;
-  remainingCredits: number;
-  user: {
-    id: string;
-    name?: string;
-    email: string;
-  };
-}
-
-interface Selection {
-  id: string;
-  userId: string;
-  playerId: string;
-  isAdminSelection?: boolean;
-  adminReason?: string;
-  user: {
-    id: string;
-    name?: string;
-  };
-  player: {
-    id: string;
-    name: string;
-    position: string;
-    realTeam: string;
-    price: number;
-  };
-  randomNumber?: number;
-  isWinner: boolean;
-}
+import { TeamWithUser, PlayerSelection, Player } from "@/types";
 
 interface AdminStatusOverviewProps {
   currentRound: {
@@ -44,15 +12,9 @@ interface AdminStatusOverviewProps {
     status: string;
     roundNumber: number;
   };
-  teams: Team[];
-  selections: Selection[];
-  availablePlayers: Array<{
-    id: string;
-    name: string;
-    position: string;
-    realTeam: string;
-    price: number;
-  }>;
+  teams: TeamWithUser[];
+  selections: PlayerSelection[];
+  availablePlayers: Player[];
 }
 
 export default function AdminStatusOverview({ 

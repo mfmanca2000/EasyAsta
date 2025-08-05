@@ -10,39 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAdminActions } from "@/hooks/useAdminActions";
-
-interface Team {
-  id: string;
-  name: string;
-  userId: string;
-  remainingCredits: number;
-  user: {
-    id: string;
-    name?: string;
-    email: string;
-  };
-}
-
-interface Selection {
-  id: string;
-  userId: string;
-  playerId: string;
-  isAdminSelection?: boolean;
-  adminReason?: string;
-  user: {
-    id: string;
-    name?: string;
-  };
-  player: {
-    id: string;
-    name: string;
-    position: string;
-    realTeam: string;
-    price: number;
-  };
-  randomNumber?: number;
-  isWinner: boolean;
-}
+import { TeamWithUser, PlayerSelection } from "@/types";
 
 interface AdminOverrideTabProps {
   currentRound?: {
@@ -51,18 +19,14 @@ interface AdminOverrideTabProps {
     status: string;
     roundNumber: number;
   };
-  teamsWithSelection: Team[];
-  selections: Selection[];
+  teamsWithSelection: TeamWithUser[];
+  selections: PlayerSelection[];
 }
 
-export default function AdminOverrideTab({ 
-  currentRound, 
-  teamsWithSelection, 
-  selections 
-}: AdminOverrideTabProps) {
+export default function AdminOverrideTab({ currentRound, teamsWithSelection, selections }: AdminOverrideTabProps) {
   const t = useTranslations("auction");
   const { loading, executeAdminAction } = useAdminActions();
-  
+
   const [overrideAction, setOverrideAction] = useState<"cancel-selection" | "force-resolution" | "reset-round">("cancel-selection");
   const [overrideTeam, setOverrideTeam] = useState("");
   const [overrideReason, setOverrideReason] = useState("");
@@ -72,7 +36,7 @@ export default function AdminOverrideTab({
       toast.error(t("admin.reasonRequired"));
       return;
     }
-    
+
     if (overrideReason.trim().length < 5) {
       toast.error(t("admin.reasonTooShort"));
       return;
@@ -119,11 +83,7 @@ export default function AdminOverrideTab({
               <SelectItem value="reset-round">{t("admin.actions.resetRound")}</SelectItem>
             </SelectContent>
           </Select>
-          {overrideAction && (
-            <p className="text-sm text-muted-foreground mt-1">
-              {t(`admin.descriptions.${overrideAction}`)}
-            </p>
-          )}
+          {overrideAction && <p className="text-sm text-muted-foreground mt-1">{t(`admin.descriptions.${overrideAction}`)}</p>}
         </div>
 
         {overrideAction === "cancel-selection" && (
@@ -140,11 +100,7 @@ export default function AdminOverrideTab({
                     <SelectItem key={team.id} value={team.id}>
                       <div className="flex items-center justify-between w-full">
                         <span>{team.name}</span>
-                        {selection && (
-                          <Badge variant={selection.isAdminSelection === true ? "destructive" : "default"}>
-                            {selection.player.name}
-                          </Badge>
-                        )}
+                        {selection && <Badge variant={selection.isAdminSelection === true ? "destructive" : "default"}>{selection.player?.name || "Unknown Player"}</Badge>}
                       </div>
                     </SelectItem>
                   );
@@ -156,21 +112,10 @@ export default function AdminOverrideTab({
 
         <div>
           <Label>{t("admin.overrideReason")}</Label>
-          <Textarea 
-            value={overrideReason} 
-            onChange={(e) => setOverrideReason(e.target.value)} 
-            placeholder={t("admin.overrideReasonPlaceholder")} 
-            rows={2} 
-            required 
-          />
+          <Textarea value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} placeholder={t("admin.overrideReasonPlaceholder")} rows={2} required />
         </div>
 
-        <Button 
-          onClick={handleOverride} 
-          disabled={loading || !overrideReason.trim() || overrideReason.trim().length < 5} 
-          variant="destructive" 
-          className="w-full"
-        >
+        <Button onClick={handleOverride} disabled={loading || !overrideReason.trim() || overrideReason.trim().length < 5} variant="destructive" className="w-full">
           {loading ? t("loading") : t("admin.executeOverride")}
         </Button>
       </CardContent>

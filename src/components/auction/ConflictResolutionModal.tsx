@@ -5,24 +5,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Trophy, Users } from "lucide-react";
-
-interface ConflictResult {
-  playerId: string;
-  playerName: string;
-  price: number;
-  conflicts: Array<{
-    teamId: string;
-    teamName: string;
-    userName: string;
-    randomNumber: number;
-    isWinner: boolean;
-  }>;
-}
+import { ConflictResolution } from "@/types";
 
 interface ConflictResolutionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  conflicts: ConflictResult[];
+  conflicts: ConflictResolution[];
   roundContinues: boolean;
 }
 
@@ -54,7 +42,7 @@ export default function ConflictResolutionModal({
                 <CardTitle className="text-lg">
                   {conflict.playerName}
                   <Badge variant="outline" className="ml-2">
-                    {conflict.price} crediti
+                    {conflict.winner.player?.price || 0} crediti
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -65,54 +53,46 @@ export default function ConflictResolutionModal({
                   </h4>
                   
                   {/* Vincitore */}
-                  {conflict.conflicts
-                    .filter(c => c.isWinner)
-                    .map((winner) => (
-                      <div
-                        key={winner.teamId}
-                        className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Trophy className="h-4 w-4 text-green-600" />
-                          <div>
-                            <div className="font-semibold text-green-800">
-                              {winner.teamName}
-                            </div>
-                            <div className="text-sm text-green-600">
-                              {winner.userName} - {t("auction.teamWon")}
-                            </div>
-                          </div>
+                  <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="h-4 w-4 text-green-600" />
+                      <div>
+                        <div className="font-semibold text-green-800">
+                          {conflict.winner.user?.name || conflict.winner.user?.email || "Unknown User"}
                         </div>
-                        <Badge variant="default" className="bg-green-600">
-                          {t("auction.randomNumber", { 
-                            number: winner.randomNumber, 
-                            winner: `🏆` 
-                          })}
-                        </Badge>
+                        <div className="text-sm text-green-600">
+                          {t("auction.teamWon")}
+                        </div>
                       </div>
-                    ))
-                  }
+                    </div>
+                    <Badge variant="default" className="bg-green-600">
+                      {t("auction.randomNumber", { 
+                        number: conflict.randomNumbers[conflict.winner.userId] || conflict.winner.randomNumber || 0, 
+                        winner: `🏆` 
+                      })}
+                    </Badge>
+                  </div>
 
                   {/* Perdenti */}
-                  {conflict.conflicts
-                    .filter(c => !c.isWinner)
-                    .sort((a, b) => b.randomNumber - a.randomNumber)
+                  {conflict.conflictedSelections
+                    .filter(selection => selection.userId !== conflict.winner.userId)
+                    .sort((a, b) => (conflict.randomNumbers[b.userId] || 0) - (conflict.randomNumbers[a.userId] || 0))
                     .map((loser) => (
                       <div
-                        key={loser.teamId}
+                        key={loser.userId}
                         className="flex items-center justify-between p-3 bg-red-50 border border-red-200 rounded-lg"
                       >
                         <div>
                           <div className="font-semibold text-red-800">
-                            {loser.teamName}
+                            {loser.user?.name || loser.user?.email || "Unknown User"}
                           </div>
                           <div className="text-sm text-red-600">
-                            {loser.userName} - {t("auction.teamLost")}
+                            {t("auction.teamLost")}
                           </div>
                         </div>
                         <Badge variant="outline" className="border-red-300 text-red-700">
                           {t("auction.randomNumber", { 
-                            number: loser.randomNumber, 
+                            number: conflict.randomNumbers[loser.userId] || loser.randomNumber || 0, 
                             winner: `` 
                           })}
                         </Badge>

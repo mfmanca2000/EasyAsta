@@ -4,35 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Edit, Trash2 } from "lucide-react";
 import { TeamLogo } from "@/components/ui/team-logo";
-
-export interface Player {
-  id: string;
-  name: string;
-  position: "P" | "D" | "C" | "A";
-  realTeam: string;
-  price: number;
-  isAssigned: boolean;
-}
-
-interface Sorting {
-  field: string;
-  direction: "asc" | "desc";
-}
-
-interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  totalPages: number;
-}
+import { Player, Pagination, PlayerSortField, PlayerSortOrder } from "@/types";
 
 interface PlayersTableProps {
   players: Player[];
   loading: boolean;
-  sorting: Sorting;
+  sorting: {
+    field: PlayerSortField;
+    direction: PlayerSortOrder;
+  };
   pagination: Pagination;
   canModifyPlayers: boolean;
-  onToggleSort: (field: string) => void;
+  onToggleSort: (field: PlayerSortField) => void;
   onPageChange: (page: number) => void;
   onNextPage: () => void;
   onPrevPage: () => void;
@@ -55,26 +38,13 @@ export default function PlayersTable({
 }: PlayersTableProps) {
   const t = useTranslations();
 
-  const getSortIcon = (field: string) => {
+  const getSortIcon = (field: PlayerSortField) => {
     if (sorting.field !== field) return null;
-    return sorting.direction === "asc" ? 
-      <ChevronUp className="h-4 w-4" /> : 
-      <ChevronDown className="h-4 w-4" />;
+    return sorting.direction === "asc" ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />;
   };
 
-  const SortableHeader = ({ 
-    field, 
-    children, 
-    className = "" 
-  }: { 
-    field: string; 
-    children: React.ReactNode; 
-    className?: string; 
-  }) => (
-    <TableHead 
-      className={`cursor-pointer hover:bg-muted/50 transition-colors ${className}`} 
-      onClick={() => onToggleSort(field)}
-    >
+  const SortableHeader = ({ field, children, className = "" }: { field: PlayerSortField; children: React.ReactNode; className?: string }) => (
+    <TableHead className={`cursor-pointer hover:bg-muted/50 transition-colors ${className}`} onClick={() => onToggleSort(field)}>
       <div className="flex items-center gap-2">
         {children}
         {getSortIcon(field)}
@@ -84,16 +54,21 @@ export default function PlayersTable({
 
   const getPositionColor = (position: string) => {
     switch (position) {
-      case "P": return "bg-blue-100 text-blue-800";
-      case "D": return "bg-green-100 text-green-800";
-      case "C": return "bg-yellow-100 text-yellow-800";
-      case "A": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "P":
+        return "bg-blue-100 text-blue-800";
+      case "D":
+        return "bg-green-100 text-green-800";
+      case "C":
+        return "bg-yellow-100 text-yellow-800";
+      case "A":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('it-IT').format(price);
+    return new Intl.NumberFormat("it-IT").format(price);
   };
 
   if (loading) {
@@ -117,43 +92,34 @@ export default function PlayersTable({
           <TableHeader>
             <TableRow>
               <SortableHeader field="name" className="w-[250px]">
-                {t('players.name')}
+                {t("players.name")}
               </SortableHeader>
               <SortableHeader field="position" className="w-[100px]">
-                {t('players.position')}
+                {t("players.position")}
               </SortableHeader>
               <SortableHeader field="realTeam" className="w-[150px]">
-                {t('players.team')}
+                {t("players.team")}
               </SortableHeader>
               <SortableHeader field="price" className="w-[120px] text-right">
-                {t('players.price')}
+                {t("players.price")}
               </SortableHeader>
-              <TableHead className="w-[100px]">{t('common.status')}</TableHead>
-              {canModifyPlayers && (
-                <TableHead className="w-[100px]">{t('common.actions')}</TableHead>
-              )}
+              <TableHead className="w-[100px]">{t("common.status")}</TableHead>
+              {canModifyPlayers && <TableHead className="w-[100px]">{t("common.actions")}</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {players.length === 0 ? (
               <TableRow>
-                <TableCell 
-                  colSpan={canModifyPlayers ? 6 : 5} 
-                  className="text-center py-8 text-muted-foreground"
-                >
-                  {t('players.noPlayersFound')}
+                <TableCell colSpan={canModifyPlayers ? 6 : 5} className="text-center py-8 text-muted-foreground">
+                  {t("players.noPlayersFound")}
                 </TableCell>
               </TableRow>
             ) : (
               players.map((player) => (
                 <TableRow key={player.id} className="hover:bg-muted/50">
-                  <TableCell className="font-medium">
-                    {player.name}
-                  </TableCell>
+                  <TableCell className="font-medium">{player.name}</TableCell>
                   <TableCell>
-                    <Badge className={getPositionColor(player.position)}>
-                      {player.position}
-                    </Badge>
+                    <Badge className={getPositionColor(player.position)}>{player.position}</Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -161,31 +127,19 @@ export default function PlayersTable({
                       <span className="truncate">{player.realTeam}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {formatPrice(player.price)}
-                  </TableCell>
+                  <TableCell className="text-right font-mono">{formatPrice(player.price)}</TableCell>
                   <TableCell>
-                    <Badge variant={player.isAssigned ? "secondary" : "default"}>
-                      {player.isAssigned 
-                        ? t('players.assigned') 
-                        : t('players.available')
-                      }
-                    </Badge>
+                    <Badge variant={player.isAssigned ? "secondary" : "default"}>{player.isAssigned ? t("players.assigned") : t("players.available")}</Badge>
                   </TableCell>
                   {canModifyPlayers && (
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="h-8 w-8 p-0"
-                          disabled={player.isAssigned}
-                        >
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0" disabled={player.isAssigned}>
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                           onClick={() => onDeletePlayer(player.id, player.name)}
                           disabled={player.isAssigned}
@@ -207,56 +161,36 @@ export default function PlayersTable({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span>
-              {t('common.showing')} {((pagination.page - 1) * pagination.limit) + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} {t('common.of')} {pagination.total}
+              {t("common.showing")} {(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} {t("common.of")} {pagination.total}
             </span>
-            <select 
-              value={pagination.limit} 
-              onChange={(e) => onLimitChange(Number(e.target.value))}
-              className="border rounded px-2 py-1 text-sm"
-            >
+            <select value={pagination.limit} onChange={(e) => onLimitChange(Number(e.target.value))} className="border rounded px-2 py-1 text-sm">
               <option value={10}>10</option>
               <option value={25}>25</option>
               <option value={50}>50</option>
               <option value={100}>100</option>
             </select>
-            <span>{t('common.perPage')}</span>
+            <span>{t("common.perPage")}</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onPrevPage}
-              disabled={pagination.page <= 1}
-            >
+            <Button variant="outline" size="sm" onClick={onPrevPage} disabled={pagination.page <= 1}>
               <ChevronLeft className="h-4 w-4" />
-              {t('common.previous')}
+              {t("common.previous")}
             </Button>
-            
+
             <div className="flex items-center gap-1">
               {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                 const pageNum = i + 1;
                 return (
-                  <Button
-                    key={pageNum}
-                    variant={pagination.page === pageNum ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => onPageChange(pageNum)}
-                    className="w-8 h-8 p-0"
-                  >
+                  <Button key={pageNum} variant={pagination.page === pageNum ? "default" : "outline"} size="sm" onClick={() => onPageChange(pageNum)} className="w-8 h-8 p-0">
                     {pageNum}
                   </Button>
                 );
               })}
             </div>
 
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={onNextPage}
-              disabled={pagination.page >= pagination.totalPages}
-            >
-              {t('common.next')}
+            <Button variant="outline" size="sm" onClick={onNextPage} disabled={pagination.page >= pagination.totalPages}>
+              {t("common.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>

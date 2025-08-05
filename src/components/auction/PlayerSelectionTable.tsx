@@ -9,14 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Coins, Search, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-
-interface Player {
-  id: string;
-  name: string;
-  position: string;
-  realTeam: string;
-  price: number;
-}
+import { Player } from "@/types";
 
 interface PlayerSelectionTableProps {
   players: Player[];

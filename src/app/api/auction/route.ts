@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { ApiResponse } from "@/types";
 
 // Get global Socket.io instance
 interface GlobalSocket {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
+      return NextResponse.json({ error: "Non autorizzato", success: false } as ApiResponse, { status: 401 });
     }
 
     const body = await request.json();
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!league) {
-      return NextResponse.json({ error: "Lega non trovata o non autorizzato" }, { status: 404 });
+      return NextResponse.json({ error: "Lega non trovata o non autorizzato", success: false } as ApiResponse, { status: 404 });
     }
 
     // Verifica che ci siano abbastanza squadre (4-8)
@@ -50,7 +51,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Numero squadre non valido. Devono essere tra 4 e 8.",
-        },
+          success: false,
+        } as ApiResponse,
         { status: 400 }
       );
     }
@@ -60,7 +62,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Nessun calciatore disponibile per l'asta",
-        },
+          success: false,
+        } as ApiResponse,
         { status: 400 }
       );
     }
@@ -73,9 +76,9 @@ export async function POST(request: NextRequest) {
         where: {
           leagueId,
           status: {
-            in: ['SELECTION', 'RESOLUTION']
-          }
-        }
+            in: ["SELECTION", "RESOLUTION"],
+          },
+        },
       });
 
       // Aggiorna lo stato della lega
@@ -94,11 +97,12 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      league: updatedLeague,
-    });
+      data: updatedLeague,
+      success: true,
+    } as ApiResponse);
   } catch (error) {
     console.error("Errore avvio asta:", error);
-    return NextResponse.json({ error: "Errore interno del server" }, { status: 500 });
+    return NextResponse.json({ error: "Errore interno del server", success: false } as ApiResponse, { status: 500 });
   }
 }
 
@@ -106,14 +110,14 @@ export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Non autorizzato" }, { status: 401 });
+      return NextResponse.json({ error: "Non autorizzato", success: false } as ApiResponse, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const leagueId = searchParams.get("leagueId");
 
     if (!leagueId) {
-      return NextResponse.json({ error: "LeagueId richiesto" }, { status: 400 });
+      return NextResponse.json({ error: "LeagueId richiesto", success: false } as ApiResponse, { status: 400 });
     }
 
     // Verifica accesso alla lega e se è admin
@@ -138,7 +142,7 @@ export async function GET(request: NextRequest) {
     const isAdmin = !!league;
 
     if (!userTeam && !isAdmin) {
-      return NextResponse.json({ error: "Accesso negato alla lega" }, { status: 403 });
+      return NextResponse.json({ error: "Accesso negato alla lega", success: false } as ApiResponse, { status: 403 });
     }
 
     // Ottieni stato asta corrente

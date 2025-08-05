@@ -1,23 +1,13 @@
 import { prisma } from "@/lib/prisma";
+import { Player, Position, AuctionRound } from "@/types";
 import { Prisma } from "@prisma/client";
 
-// Type definitions for auction-related data structures
-type Position = "P" | "D" | "C" | "A";
-
-interface User {
-  id: string;
-  name?: string | null;
-  email: string;
-}
-
-interface Player {
-  id: string;
-  name: string;
-  position: Position;
-  realTeam: string;
-  price: number;
-  isAssigned: boolean;
-}
+// Local interfaces for auction logic
+// interface User {
+//   id: string;
+//   name?: string | null;
+//   email: string;
+// }
 
 interface Team {
   id: string;
@@ -35,25 +25,35 @@ interface League {
   status: string;
 }
 
-interface PlayerSelection {
+// Using centralized PlayerSelection and AuctionRound from @/types
+// Local extension for database query results
+interface LocalPlayerSelection {
   id: string;
   roundId: string;
   userId: string;
   playerId: string;
-  randomNumber?: number | null;
+  randomNumber: number | null;
   isWinner: boolean;
-  user: User;
+  isAdminSelection: boolean;
+  adminReason: string | null;
+  createdAt: Date;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+    role: any; // UserRole enum
+    isBot: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    emailVerified: Date | null;
+  };
   player: Player;
 }
 
-interface AuctionRound {
-  id: string;
-  leagueId: string;
-  position: Position;
-  roundNumber: number;
-  status: string;
+interface LocalAuctionRound extends AuctionRound {
   league: League;
-  selections: PlayerSelection[];
+  selections: LocalPlayerSelection[];
 }
 
 interface Assignment {
@@ -81,7 +81,7 @@ interface Conflict {
 }
 
 interface RandomResult {
-  selection: PlayerSelection;
+  selection: LocalPlayerSelection;
   team: Team;
   randomNumber: number;
 }
@@ -94,7 +94,7 @@ interface ProcessSelectionsResult {
 }
 
 interface ResolveRoundResult {
-  completedRound: AuctionRound;
+  completedRound: LocalAuctionRound;
   assignments: Assignment[];
   conflicts: Conflict[];
   roundContinues: boolean;
@@ -103,11 +103,11 @@ interface ResolveRoundResult {
   message: string;
 }
 
-async function processSelections(round: AuctionRound): Promise<ProcessSelectionsResult> {
+async function processSelections(round: LocalAuctionRound): Promise<ProcessSelectionsResult> {
   // Raggruppa selezioni per calciatore
-  const playerSelections = new Map<string, PlayerSelection[]>();
+  const playerSelections = new Map<string, LocalPlayerSelection[]>();
 
-  round.selections.forEach((selection: PlayerSelection) => {
+  round.selections.forEach((selection: LocalPlayerSelection) => {
     const playerId = selection.playerId;
     if (!playerSelections.has(playerId)) {
       playerSelections.set(playerId, []);
@@ -139,7 +139,7 @@ async function processSelections(round: AuctionRound): Promise<ProcessSelections
     team.teamPlayers.forEach((tp: { player: { position: Position } }) => {
       positionCounts[tp.player.position as keyof typeof positionCounts]++;
     });
-    
+
     const maxByPosition = { P: 3, D: 8, C: 8, A: 6 };
     return positionCounts[position] < maxByPosition[position];
   };
@@ -151,33 +151,33 @@ async function processSelections(round: AuctionRound): Promise<ProcessSelections
       const selection = selections[0];
       const team = teamsMap.get(selection.userId);
 
-      if (team && team.remainingCredits >= selection.player.price && canTeamAddPosition(team, selection.player.position as Position)) {
+      if (team && selection.player && team.remainingCredits >= selection.player.price && canTeamAddPosition(team, selection.player.position as Position)) {
         assignments.push({
           playerId: selection.playerId,
           winnerId: selection.userId,
-          winnerName: selection.user.name || "Sconosciuto",
-          playerName: selection.player.name,
-          price: selection.player.price,
+          winnerName: selection.user?.name || "Sconosciuto",
+          playerName: selection.player!.name,
+          price: selection.player!.price,
         });
         teamsWithAssignments.add(team.id);
       }
     } else {
       // Conflict - generate random numbers
-      const validSelections = selections.filter((selection: PlayerSelection) => {
+      const validSelections = selections.filter((selection) => {
         const team = teamsMap.get(selection.userId);
         return team && team.remainingCredits >= selection.player.price && canTeamAddPosition(team, selection.player.position as Position);
       });
 
       if (validSelections.length > 0) {
         // Generate random numbers for valid selections
-        const randomResults: RandomResult[] = validSelections.map((selection: PlayerSelection) => ({
+        const randomResults: RandomResult[] = validSelections.map((selection) => ({
           selection,
           team: teamsMap.get(selection.userId)!,
           randomNumber: Math.floor(Math.random() * 1000) + 1,
         }));
 
         // Sort by random number (highest wins)
-        randomResults.sort((a: RandomResult, b: RandomResult) => b.randomNumber - a.randomNumber);
+        randomResults.sort((a, b) => b.randomNumber - a.randomNumber);
         const winner = randomResults[0];
 
         assignments.push({
@@ -196,7 +196,7 @@ async function processSelections(round: AuctionRound): Promise<ProcessSelections
           playerId: winner.selection.playerId,
           playerName: winner.selection.player.name,
           price: winner.selection.player.price,
-          conflicts: randomResults.map((result: RandomResult) => ({
+          conflicts: randomResults.map((result) => ({
             teamId: result.team.id,
             teamName: result.team.name,
             userName: result.selection.user.name || result.selection.user.email || "Sconosciuto",

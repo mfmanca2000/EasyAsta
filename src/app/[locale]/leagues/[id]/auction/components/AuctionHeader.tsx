@@ -2,12 +2,7 @@ import { useTranslations } from "next-intl";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, Clock, Users } from "lucide-react";
-
-interface Selection {
-  id: string;
-  user: { name: string };
-  player: { name: string };
-}
+import { PlayerSelection, Position } from "@/types";
 
 interface ConnectedUser {
   id: string;
@@ -16,10 +11,10 @@ interface ConnectedUser {
 
 interface AuctionHeaderProps {
   currentRound: {
-    position: "P" | "D" | "C" | "A";
+    position: Position;
     status: "SELECTION" | "RESOLUTION" | "COMPLETED";
     roundNumber: number;
-    selections: Selection[];
+    selections: PlayerSelection[];
   };
   isConnected: boolean;
   isSyncing: boolean;

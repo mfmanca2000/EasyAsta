@@ -4,7 +4,8 @@ import { useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { League, Team, useLeague } from "@/hooks/useLeague";
+import { League, useLeague } from "@/hooks/useLeague";
+import { TeamWithPlayers } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,7 @@ export default function LeagueDetailPage() {
     return <Badge className={colors[position]}>{position}</Badge>;
   };
 
-  const getRosterComposition = (team: Team) => {
+  const getRosterComposition = (team: TeamWithPlayers) => {
     const composition = { P: 0, D: 0, C: 0, A: 0 };
     team.teamPlayers.forEach((tp) => {
       composition[tp.player.position]++;

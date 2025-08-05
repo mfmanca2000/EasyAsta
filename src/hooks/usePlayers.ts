@@ -1,27 +1,23 @@
 import { useState, useCallback } from "react";
+import { Player, Pagination, PlayerSortField, PlayerSortOrder } from "@/types";
 
-export interface Player {
-  id: string;
-  name: string;
-  position: "P" | "D" | "C" | "A";
-  realTeam: string;
-  price: number;
-  isAssigned: boolean;
-}
+// export interface Player {
+//   id: string;
+//   name: string;
+//   position: "P" | "D" | "C" | "A";
+//   realTeam: string;
+//   price: number;
+//   isAssigned: boolean;
+// }
 
 export interface PlayersState {
   players: Player[];
   stats: Record<string, number>;
   loading: boolean;
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+  pagination: Pagination;
   sorting: {
-    field: string;
-    direction: 'asc' | 'desc';
+    field: PlayerSortField;
+    direction: PlayerSortOrder;
   };
 }
 
@@ -35,172 +31,175 @@ export function usePlayers(leagueId: string) {
       limit: 50,
       total: 0,
       totalPages: 0,
+      hasNext: false,
+      hasPrev: false,
     },
     sorting: {
-      field: 'name',
-      direction: 'asc',
+      field: "name" as PlayerSortField,
+      direction: "asc" as PlayerSortOrder,
     },
   });
 
-  const fetchPlayers = useCallback(async (filters?: {
-    search?: string;
-    position?: string;
-    available?: string;
-    page?: number;
-    limit?: number;
-    sortField?: string;
-    sortDirection?: 'asc' | 'desc';
-  }) => {
-    if (!leagueId) return;
+  const fetchPlayers = useCallback(
+    async (filters?: { search?: string; position?: string; available?: string; page?: number; limit?: number; sortField?: string; sortDirection?: "asc" | "desc" }) => {
+      if (!leagueId) return;
 
-    setState(prev => ({ ...prev, loading: true }));
+      setState((prev) => ({ ...prev, loading: true }));
 
-    try {
-      const params = new URLSearchParams({ leagueId });
+      try {
+        const params = new URLSearchParams({ leagueId });
 
-      if (filters?.search) params.append("search", filters.search);
-      if (filters?.position && filters.position !== "all") {
-        params.append("position", filters.position);
+        if (filters?.search) params.append("search", filters.search);
+        if (filters?.position && filters.position !== "all") {
+          params.append("position", filters.position);
+        }
+        if (filters?.available && filters.available !== "all") {
+          params.append("available", filters.available);
+        }
+        if (filters?.page) {
+          params.append("page", filters.page.toString());
+        }
+        if (filters?.limit) {
+          params.append("limit", filters.limit.toString());
+        }
+        if (filters?.sortField) {
+          params.append("sortField", filters.sortField);
+        }
+        if (filters?.sortDirection) {
+          params.append("sortDirection", filters.sortDirection);
+        }
+
+        const response = await fetch(`/api/players?${params}`);
+        if (response.ok) {
+          const data = await response.json();
+          setState((prev) => ({
+            ...prev,
+            players: data.players,
+            stats: data.stats || {},
+            pagination: {
+              ...data.pagination,
+              limit: prev.pagination.limit, // Mantieni il limite interno, non quello dell'API
+            },
+            loading: false,
+          }));
+        } else {
+          setState((prev) => ({ ...prev, loading: false }));
+        }
+      } catch (error) {
+        console.error("Errore caricamento calciatori:", error);
+        setState((prev) => ({ ...prev, loading: false }));
       }
-      if (filters?.available && filters.available !== "all") {
-        params.append("available", filters.available);
+    },
+    [leagueId]
+  );
+
+  const importPlayers = useCallback(
+    async (file: File) => {
+      if (!leagueId) return { success: false, error: "ID lega mancante" };
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("leagueId", leagueId);
+
+      try {
+        const response = await fetch("/api/players/import", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Ricarica la lista dopo l'import
+          await fetchPlayers();
+          return { success: true, data: result };
+        } else {
+          return { success: false, error: result.error, details: result.details, warning: result.warning };
+        }
+      } catch (error) {
+        console.error("Errore import calciatori:", error);
+        return { success: false, error: "Errore durante l'upload del file" };
       }
-      if (filters?.page) {
-        params.append("page", filters.page.toString());
+    },
+    [leagueId, fetchPlayers]
+  );
+
+  const deletePlayer = useCallback(
+    async (playerId: string) => {
+      if (!leagueId) return { success: false, error: "ID lega mancante" };
+
+      try {
+        const response = await fetch(`/api/players/${playerId}`, {
+          method: "DELETE",
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+          // Ricarica la lista dopo l'eliminazione
+          await fetchPlayers();
+          return { success: true, data: result };
+        } else {
+          return { success: false, error: result.error };
+        }
+      } catch (error) {
+        console.error("Errore eliminazione calciatore:", error);
+        return { success: false, error: "Errore durante l'eliminazione del calciatore" };
       }
-      if (filters?.limit) {
-        params.append("limit", filters.limit.toString());
-      }
-      if (filters?.sortField) {
-        params.append("sortField", filters.sortField);
-      }
-      if (filters?.sortDirection) {
-        params.append("sortDirection", filters.sortDirection);
-      }
-
-      const response = await fetch(`/api/players?${params}`);
-      if (response.ok) {
-        const data = await response.json();
-        setState(prev => ({
-          ...prev,
-          players: data.players,
-          stats: data.stats || {},
-          pagination: {
-            ...data.pagination,
-            limit: prev.pagination.limit // Mantieni il limite interno, non quello dell'API
-          },
-          loading: false,
-        }));
-      } else {
-        setState(prev => ({ ...prev, loading: false }));
-      }
-    } catch (error) {
-      console.error("Errore caricamento calciatori:", error);
-      setState(prev => ({ ...prev, loading: false }));
-    }
-  }, [leagueId]);
-
-  const importPlayers = useCallback(async (file: File) => {
-    if (!leagueId) return { success: false, error: "ID lega mancante" };
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("leagueId", leagueId);
-
-    try {
-      const response = await fetch("/api/players/import", {
-        method: "POST",
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        // Ricarica la lista dopo l'import
-        await fetchPlayers();
-        return { success: true, data: result };
-      } else {
-        return { success: false, error: result.error, details: result.details, warning: result.warning };
-      }
-    } catch (error) {
-      console.error("Errore import calciatori:", error);
-      return { success: false, error: "Errore durante l'upload del file" };
-    }
-  }, [leagueId, fetchPlayers]);
-
-  const deletePlayer = useCallback(async (playerId: string) => {
-    if (!leagueId) return { success: false, error: "ID lega mancante" };
-
-    try {
-      const response = await fetch(`/api/players/${playerId}`, {
-        method: "DELETE",
-      });
-
-      const result = await response.json();
-
-      if (response.ok) {
-        // Ricarica la lista dopo l'eliminazione
-        await fetchPlayers();
-        return { success: true, data: result };
-      } else {
-        return { success: false, error: result.error };
-      }
-    } catch (error) {
-      console.error("Errore eliminazione calciatore:", error);
-      return { success: false, error: "Errore durante l'eliminazione del calciatore" };
-    }
-  }, [leagueId, fetchPlayers]);
+    },
+    [leagueId, fetchPlayers]
+  );
 
   const goToPage = useCallback((page: number) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      pagination: { ...prev.pagination, page }
+      pagination: { ...prev.pagination, page },
     }));
   }, []);
 
   const nextPage = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       const nextPage = Math.min(prev.pagination.page + 1, prev.pagination.totalPages);
       return {
         ...prev,
-        pagination: { ...prev.pagination, page: nextPage }
+        pagination: { ...prev.pagination, page: nextPage },
       };
     });
   }, []);
 
   const prevPage = useCallback(() => {
-    setState(prev => {
+    setState((prev) => {
       const prevPage = Math.max(prev.pagination.page - 1, 1);
       return {
         ...prev,
-        pagination: { ...prev.pagination, page: prevPage }
+        pagination: { ...prev.pagination, page: prevPage },
       };
     });
   }, []);
 
-  const setSorting = useCallback((field: string, direction: 'asc' | 'desc') => {
-    setState(prev => ({
+  const setSorting = useCallback((field: PlayerSortField, direction: PlayerSortOrder) => {
+    setState((prev) => ({
       ...prev,
       sorting: { field, direction },
-      pagination: { ...prev.pagination, page: 1 } // Reset to first page when sorting
+      pagination: { ...prev.pagination, page: 1 }, // Reset to first page when sorting
     }));
   }, []);
 
-  const toggleSort = useCallback((field: string) => {
-    setState(prev => {
-      const newDirection = prev.sorting.field === field && prev.sorting.direction === 'asc' ? 'desc' : 'asc';
+  const toggleSort = useCallback((field: PlayerSortField) => {
+    setState((prev) => {
+      const newDirection: PlayerSortOrder = prev.sorting.field === field && prev.sorting.direction === "asc" ? "desc" : "asc";
       return {
         ...prev,
         sorting: { field, direction: newDirection },
-        pagination: { ...prev.pagination, page: 1 }
+        pagination: { ...prev.pagination, page: 1 },
       };
     });
   }, []);
 
   const setLimit = useCallback((limit: number) => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
-      pagination: { ...prev.pagination, limit, page: 1 }
+      pagination: { ...prev.pagination, limit, page: 1 },
     }));
   }, []);
 

@@ -3,11 +3,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { ApiResponse } from "@/types";
 
 const createPlayerSchema = z.object({
   name: z.string().min(1, "Nome calciatore richiesto"),
-  position: z.enum(["P", "D", "C", "A"], { 
-    message: "Ruolo deve essere P, D, C o A" 
+  position: z.enum(["P", "D", "C", "A"] as const, {
+    message: "Ruolo deve essere P, D, C o A",
   }),
   realTeam: z.string().min(1, "Squadra reale richiesta"),
   price: z.number().min(1, "Prezzo deve essere maggiore di 0"),
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.email) {
-      return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
+      return NextResponse.json({ error: "Non autenticato", success: false } as ApiResponse, { status: 401 });
     }
 
     const body = await request.json();
@@ -61,13 +62,15 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ player }, { status: 201 });
-
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: "Dati non validi", 
-        details: error.issues 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Dati non validi",
+          details: error.issues,
+        },
+        { status: 400 }
+      );
     }
 
     console.error("Errore creazione calciatore:", error);
@@ -103,10 +106,7 @@ export async function GET(request: NextRequest) {
     const league = await prisma.league.findFirst({
       where: {
         id: leagueId,
-        OR: [
-          { adminId: user.id },
-          { teams: { some: { userId: user.id } } },
-        ],
+        OR: [{ adminId: user.id }, { teams: { some: { userId: user.id } } }],
       },
     });
 
@@ -124,11 +124,11 @@ export async function GET(request: NextRequest) {
     const sortDirection = searchParams.get("sortDirection") || "asc";
 
     // Costruisci filtri
-    const where: { 
-      leagueId: string; 
-      position?: "P" | "D" | "C" | "A"; 
-      OR?: Array<{ name?: { contains: string; mode: "insensitive" }; realTeam?: { contains: string; mode: "insensitive" } }>; 
-      isAssigned?: boolean; 
+    const where: {
+      leagueId: string;
+      position?: "P" | "D" | "C" | "A";
+      OR?: Array<{ name?: { contains: string; mode: "insensitive" }; realTeam?: { contains: string; mode: "insensitive" } }>;
+      isAssigned?: boolean;
     } = { leagueId };
 
     if (position && ["P", "D", "C", "A"].includes(position)) {
@@ -136,10 +136,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { realTeam: { contains: search, mode: "insensitive" } },
-      ];
+      where.OR = [{ name: { contains: search, mode: "insensitive" } }, { realTeam: { contains: search, mode: "insensitive" } }];
     }
 
     if (available === "true") {
@@ -150,10 +147,10 @@ export async function GET(request: NextRequest) {
 
     // Ordinamento
     const getOrderBy = () => {
-      const validFields = ['name', 'position', 'realTeam', 'price', 'isAssigned'];
-      const field = validFields.includes(sortField) ? sortField : 'name';
-      const direction = sortDirection === 'desc' ? 'desc' : 'asc';
-      
+      const validFields = ["name", "position", "realTeam", "price", "isAssigned"];
+      const field = validFields.includes(sortField) ? sortField : "name";
+      const direction = sortDirection === "desc" ? "desc" : "asc";
+
       return { [field]: direction };
     };
 
@@ -173,7 +170,7 @@ export async function GET(request: NextRequest) {
 
     // Statistiche per ruolo
     const stats = await prisma.player.groupBy({
-      by: ['position'],
+      by: ["position"],
       where: { leagueId },
       _count: {
         id: true,
@@ -185,7 +182,7 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, number>);
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       players,
       pagination: {
         page: limit === -1 ? 1 : page,
@@ -195,7 +192,6 @@ export async function GET(request: NextRequest) {
       },
       stats: positionStats,
     });
-
   } catch (error) {
     console.error("Errore recupero calciatori:", error);
     return NextResponse.json({ error: "Errore interno del server" }, { status: 500 });

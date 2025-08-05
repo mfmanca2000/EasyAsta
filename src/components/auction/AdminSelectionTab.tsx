@@ -10,26 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useAdminActions } from "@/hooks/useAdminActions";
-
-interface Team {
-  id: string;
-  name: string;
-  userId: string;
-  remainingCredits: number;
-  user: {
-    id: string;
-    name?: string;
-    email: string;
-  };
-}
-
-interface Player {
-  id: string;
-  name: string;
-  position: string;
-  realTeam: string;
-  price: number;
-}
+import { Player } from "@/types";
+import { TeamWithUser } from "@/types";
 
 interface AdminSelectionTabProps {
   currentRound?: {
@@ -38,18 +20,14 @@ interface AdminSelectionTabProps {
     status: string;
     roundNumber: number;
   };
-  teamsWithoutSelection: Team[];
+  teamsWithoutSelection: TeamWithUser[];
   availablePlayers: Player[];
 }
 
-export default function AdminSelectionTab({ 
-  currentRound, 
-  teamsWithoutSelection, 
-  availablePlayers 
-}: AdminSelectionTabProps) {
+export default function AdminSelectionTab({ currentRound, teamsWithoutSelection, availablePlayers }: AdminSelectionTabProps) {
   const t = useTranslations("auction");
   const { loading, executeAdminAction } = useAdminActions();
-  
+
   const [selectedTeam, setSelectedTeam] = useState("");
   const [selectedPlayer, setSelectedPlayer] = useState("");
   const [adminReason, setAdminReason] = useState("");
@@ -131,19 +109,10 @@ export default function AdminSelectionTab({
 
         <div>
           <Label>{t("admin.reason")}</Label>
-          <Textarea 
-            value={adminReason} 
-            onChange={(e) => setAdminReason(e.target.value)} 
-            placeholder={t("admin.reasonPlaceholder")} 
-            rows={2} 
-          />
+          <Textarea value={adminReason} onChange={(e) => setAdminReason(e.target.value)} placeholder={t("admin.reasonPlaceholder")} rows={2} />
         </div>
 
-        <Button 
-          onClick={handleAdminSelect} 
-          disabled={loading || !selectedTeam || !selectedPlayer} 
-          className="w-full"
-        >
+        <Button onClick={handleAdminSelect} disabled={loading || !selectedTeam || !selectedPlayer} className="w-full">
           {loading ? t("loading") : t("admin.executeSelection")}
         </Button>
       </CardContent>

@@ -9,13 +9,12 @@ import { Switch } from "@/components/ui/switch";
 import { Clock, AlertTriangle } from "lucide-react";
 import { useAdminActions } from "@/hooks/useAdminActions";
 import { useAdminConfig } from "@/hooks/useAdminConfig";
+import { AuctionConfig } from "@/types";
 
 interface AdminConfigTabProps {
   leagueId: string;
-  initialConfig?: {
-    timeoutSeconds: number;
-    autoSelectOnTimeout: boolean;
-    pauseOnDisconnect: boolean;
+  initialConfig?: AuctionConfig & {
+    pauseOnDisconnect?: boolean;
   };
 }
 

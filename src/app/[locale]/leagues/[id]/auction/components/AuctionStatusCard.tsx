@@ -1,16 +1,9 @@
 import { useTranslations } from "next-intl";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-
-interface UserSelection {
-  player: {
-    name: string;
-  };
-  randomNumber?: number;
-  isWinner: boolean;
-}
+import { PlayerSelection } from "@/types";
 
 interface AuctionStatusCardProps {
-  userSelection: UserSelection | null | undefined;
+  userSelection: PlayerSelection | null | undefined;
 }
 
 export default function AuctionStatusCard({ userSelection }: AuctionStatusCardProps) {
@@ -24,7 +17,7 @@ export default function AuctionStatusCard({ userSelection }: AuctionStatusCardPr
     <Card>
       <CardHeader>
         <CardTitle className="text-sm text-green-600">
-          {t("auction.selectedPlayer", { playerName: userSelection.player.name })}
+          {t("auction.selectedPlayer", { playerName: userSelection.player?.name || "Unknown Player" })}
         </CardTitle>
         <CardDescription>
           {userSelection.randomNumber 
