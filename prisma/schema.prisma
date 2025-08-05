@@ -7,22 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// NextAuth.js Models
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -43,138 +41,155 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// User - Utenti dell'applicazione
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
+  id            String            @id @default(cuid())
+  email         String            @unique
   name          String?
   image         String?
-  role          UserRole  @default(PLAYER)
-  isBot         Boolean   @default(false)  // Identifica utenti bot
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  role          UserRole          @default(PLAYER)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
   emailVerified DateTime?
-  
-  // NextAuth relations
+  isBot         Boolean           @default(false)
   accounts      Account[]
-  sessions      Session[]
-  
-  // App relations
-  adminLeagues  League[]  @relation("LeagueAdmin")
-  teams         Team[]
+  adminActions  AdminAction[]     @relation("AdminUser")
+  adminLeagues  League[]          @relation("LeagueAdmin")
   selections    PlayerSelection[]
-  adminActions  AdminAction[] @relation("AdminUser")
+  sessions      Session[]
+  teams         Team[]
 }
 
-// League - Leghe fantacalcio
 model League {
-  id          String      @id @default(cuid())
-  name        String
-  adminId     String
-  credits     Int         @default(500)
-  status      LeagueStatus @default(SETUP)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  // Relazioni
-  admin       User        @relation("LeagueAdmin", fields: [adminId], references: [id])
-  teams       Team[]
-  players     Player[]
-  rounds      AuctionRound[]
-  config      AuctionConfig?
-  botConfig   BotConfig?
+  id           String         @id @default(cuid())
+  name         String
+  adminId      String
+  credits      Int            @default(500)
+  status       LeagueStatus   @default(SETUP)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
   adminActions AdminAction[]
+  config       AuctionConfig?
+  rounds       AuctionRound[]
+  botConfig    BotConfig?
+  admin        User           @relation("LeagueAdmin", fields: [adminId], references: [id])
+  players      Player[]
+  teams        Team[]
 }
 
-// Team - Squadre dei giocatori
 model Team {
-  id              String    @id @default(cuid())
-  name            String
-  userId          String    
-  leagueId        String
+  id               String        @id @default(cuid())
+  name             String
+  userId           String
+  leagueId         String
   remainingCredits Int
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  // Relazioni
-  user            User      @relation(fields: [userId], references: [id])
-  league          League    @relation(fields: [leagueId], references: [id])
-  teamPlayers     TeamPlayer[]
-  adminActions    AdminAction[] @relation("AdminTargetTeam")
-  
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  adminActions     AdminAction[] @relation("AdminTargetTeam")
+  league           League        @relation(fields: [leagueId], references: [id])
+  user             User          @relation(fields: [userId], references: [id])
+  teamPlayers      TeamPlayer[]
+
   @@unique([userId, leagueId])
 }
 
-// Player - Calciatori disponibili
 model Player {
-  id          String      @id @default(cuid())
-  name        String
-  position    Position
-  realTeam    String
-  price       Int
-  leagueId    String
-  isAssigned  Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  // Relazioni
-  league      League      @relation(fields: [leagueId], references: [id])
-  teamPlayers TeamPlayer[]
-  selections  PlayerSelection[]
-  adminActions AdminAction[] @relation("AdminTargetPlayer")
+  id           String            @id @default(cuid())
+  name         String
+  position     Position
+  realTeam     String
+  price        Int
+  leagueId     String
+  isAssigned   Boolean           @default(false)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  adminActions AdminAction[]     @relation("AdminTargetPlayer")
+  league       League            @relation(fields: [leagueId], references: [id])
+  selections   PlayerSelection[]
+  teamPlayers  TeamPlayer[]
 }
 
-// TeamPlayer - Calciatori assegnati alle squadre
 model TeamPlayer {
-  id          String    @id @default(cuid())
-  teamId      String
-  playerId    String
-  acquiredAt  DateTime  @default(now())
-  
-  // Relazioni
-  team        Team      @relation(fields: [teamId], references: [id])
-  player      Player    @relation(fields: [playerId], references: [id])
-  
+  id         String   @id @default(cuid())
+  teamId     String
+  playerId   String
+  acquiredAt DateTime @default(now())
+  player     Player   @relation(fields: [playerId], references: [id])
+  team       Team     @relation(fields: [teamId], references: [id])
+
   @@unique([teamId, playerId])
 }
 
-// AuctionRound - Turni d'asta
 model AuctionRound {
-  id          String      @id @default(cuid())
-  leagueId    String
-  position    Position
-  roundNumber Int
-  status      RoundStatus @default(SELECTION)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  
-  // Relazioni
-  league      League      @relation(fields: [leagueId], references: [id])
-  selections  PlayerSelection[]
-  adminActions AdminAction[] @relation("AdminTargetRound")
+  id           String            @id @default(cuid())
+  leagueId     String
+  position     Position
+  roundNumber  Int
+  status       RoundStatus       @default(SELECTION)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  adminActions AdminAction[]     @relation("AdminTargetRound")
+  league       League            @relation(fields: [leagueId], references: [id])
+  selections   PlayerSelection[]
 }
 
-// PlayerSelection - Selezioni dei giocatori
 model PlayerSelection {
-  id            String    @id @default(cuid())
-  roundId       String
-  userId        String
-  playerId      String
-  randomNumber  Int?
-  isWinner      Boolean   @default(false)
-  isAdminSelection Boolean @default(false)  // Traccia se selezione fatta da admin
-  adminReason   String?   // Motivazione se selezione admin
-  createdAt     DateTime  @default(now())
-  
-  // Relazioni
-  round         AuctionRound @relation(fields: [roundId], references: [id])
-  user          User      @relation(fields: [userId], references: [id])
-  player        Player    @relation(fields: [playerId], references: [id])
-  
+  id               String       @id @default(cuid())
+  roundId          String
+  userId           String
+  playerId         String
+  randomNumber     Int?
+  isWinner         Boolean      @default(false)
+  createdAt        DateTime     @default(now())
+  adminReason      String?
+  isAdminSelection Boolean      @default(false)
+  player           Player       @relation(fields: [playerId], references: [id])
+  round            AuctionRound @relation(fields: [roundId], references: [id])
+  user             User         @relation(fields: [userId], references: [id])
+
   @@unique([roundId, userId])
 }
 
-// Enums
+model AuctionConfig {
+  id                  String   @id @default(cuid())
+  leagueId            String   @unique
+  timeoutSeconds      Int      @default(30)
+  autoSelectOnTimeout Boolean  @default(true)
+  pauseOnDisconnect   Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  league              League   @relation(fields: [leagueId], references: [id])
+}
+
+model AdminAction {
+  id           String          @id @default(cuid())
+  leagueId     String
+  adminId      String
+  action       AdminActionType
+  targetTeamId String?
+  playerId     String?
+  roundId      String?
+  reason       String?
+  metadata     Json?
+  createdAt    DateTime        @default(now())
+  admin        User            @relation("AdminUser", fields: [adminId], references: [id])
+  league       League          @relation(fields: [leagueId], references: [id])
+  player       Player?         @relation("AdminTargetPlayer", fields: [playerId], references: [id])
+  round        AuctionRound?   @relation("AdminTargetRound", fields: [roundId], references: [id])
+  targetTeam   Team?           @relation("AdminTargetTeam", fields: [targetTeamId], references: [id])
+}
+
+model BotConfig {
+  id                String          @id @default(cuid())
+  leagueId          String          @unique
+  isEnabled         Boolean         @default(false)
+  selectionDelayMin Int             @default(2)
+  selectionDelayMax Int             @default(8)
+  intelligence      BotIntelligence @default(MEDIUM)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  league            League          @relation(fields: [leagueId], references: [id])
+}
+
 enum UserRole {
   PLAYER
   ADMIN
@@ -187,10 +202,10 @@ enum LeagueStatus {
 }
 
 enum Position {
-  P  // Portiere
-  D  // Difensore
-  C  // Centrocampista
-  A  // Attaccante
+  P
+  D
+  C
+  A
 }
 
 enum RoundStatus {
@@ -199,70 +214,18 @@ enum RoundStatus {
   COMPLETED
 }
 
-// AuctionConfig - Configurazioni asta per lega
-model AuctionConfig {
-  id              String   @id @default(cuid())
-  leagueId        String   @unique
-  timeoutSeconds  Int      @default(30)
-  autoSelectOnTimeout Boolean @default(true)
-  pauseOnDisconnect Boolean @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relazioni
-  league          League   @relation(fields: [leagueId], references: [id])
-}
-
-// AdminAction - Log azioni amministrative
-model AdminAction {
-  id          String      @id @default(cuid())
-  leagueId    String
-  adminId     String
-  action      AdminActionType
-  targetTeamId String?
-  playerId    String?
-  roundId     String?
-  reason      String?
-  metadata    Json?       // Dati aggiuntivi azione (JSON)
-  createdAt   DateTime    @default(now())
-  
-  // Relazioni
-  league      League      @relation(fields: [leagueId], references: [id])
-  admin       User        @relation("AdminUser", fields: [adminId], references: [id])
-  targetTeam  Team?       @relation("AdminTargetTeam", fields: [targetTeamId], references: [id])
-  player      Player?     @relation("AdminTargetPlayer", fields: [playerId], references: [id])
-  round       AuctionRound? @relation("AdminTargetRound", fields: [roundId], references: [id])
-}
-
-// Enum per tipi di azioni admin
 enum AdminActionType {
-  ADMIN_SELECT        // Selezione per conto terzi
-  CANCEL_SELECTION    // Annullamento selezione
-  FORCE_RESOLUTION    // Forzatura risoluzione
-  RESET_ROUND        // Reset turno
-  TIMEOUT_CONFIG     // Modifica configurazione timeout
-  EMERGENCY_PAUSE    // Pausa emergenza
-  BACKUP_RESTORE     // Backup/restore stato
+  ADMIN_SELECT
+  CANCEL_SELECTION
+  FORCE_RESOLUTION
+  RESET_ROUND
+  TIMEOUT_CONFIG
+  EMERGENCY_PAUSE
+  BACKUP_RESTORE
 }
 
-// BotConfig - Configurazioni comportamento bot per lega
-model BotConfig {
-  id              String   @id @default(cuid())
-  leagueId        String   @unique
-  isEnabled       Boolean  @default(false)
-  selectionDelayMin Int    @default(2)    // Secondi minimi prima selezione
-  selectionDelayMax Int    @default(8)    // Secondi massimi prima selezione
-  intelligence    BotIntelligence @default(MEDIUM)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  
-  // Relazioni
-  league          League   @relation(fields: [leagueId], references: [id])
-}
-
-// Enum intelligenza bot
 enum BotIntelligence {
-  LOW      // Selezioni casuali
-  MEDIUM   // Selezioni equilibrate crediti/qualità
-  HIGH     // Selezioni ottimizzate strategiche
+  LOW
+  MEDIUM
+  HIGH
 }
