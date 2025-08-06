@@ -52,17 +52,10 @@ export default function Home() {
           <p className="text-lg mb-6">
             {t("auth.welcome")}, <span className="font-semibold">{session.user?.name}</span>!
           </p>
-          <div className="flex gap-4 justify-center">
+          <div className="text-center">
             <Link href="/dashboard">
               <Button size="lg">{t("navigation.dashboard")}</Button>
             </Link>
-            {session.user?.role === "ADMIN" && (
-              <Link href="/admin">
-                <Button variant="outline" size="lg">
-                  {t("navigation.admin")}
-                </Button>
-              </Link>
-            )}
           </div>
         </div>
       ) : (
