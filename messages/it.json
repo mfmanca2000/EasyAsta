@@ -9,8 +9,6 @@
     "edit": "Modifica",
     "create": "Crea",
     "back": "Indietro",
-    "next": "Avanti",
-    "previous": "Precedente",
     "search": "Cerca",
     "filter": "Filtra",
     "all": "Tutti",
@@ -28,7 +26,19 @@
     "manage": "Gestisci",
     "view": "Visualizza",
     "total": "Totale",
-    "remaining": "Rimanenti"
+    "remaining": "Rimanenti",
+    "refresh": "Aggiorna",
+    "reset": "Reset",
+    "showing": "Mostrando",
+    "of": "di",
+    "perPage": "per pagina",
+    "previous": "Precedente",
+    "next": "Successiva",
+    "selectFile": "Selezionare un file"
+  },
+  "filters": {
+    "allPositions": "Tutti i ruoli",
+    "allPlayers": "Tutti i giocatori"
   },
   "auth": {
     "signIn": "Accedi",
@@ -79,6 +89,7 @@
     "nextStepsDescription": "Inizia subito a usare EasyAsta",
     "noLeagueFound": "Nessuna lega trovata",
     "noTeamFound": "Nessuna squadra trovata",
+    "noTeamsFound": "Nessune squadre trovate",
     "noActiveAuction": "Nessuna asta attiva",
     "joinLeague": "Unisciti a una Lega",
     "viewRosters": "Visualizza Rose",
@@ -95,7 +106,13 @@
     "quickActionsDescription": "Accessi rapidi alle funzioni principali",
     "browseLeagues": "Sfoglia Leghe",
     "createLeague": "Crea Lega",
-    "manageLeagues": "Gestisci Leghe"
+    "manageLeagues": "Gestisci Leghe",
+    "showingTeams": "Mostrando {shown} di {total} squadre",
+    "viewAllTeams": "Visualizza Tutte le Squadre"
+  },
+  "teams": {
+    "complete": "Completa",
+    "viewRoster": "Vedi Rosa"
   },
   "leagues": {
     "title": "Le Mie Leghe",
@@ -106,12 +123,13 @@
     "createNewLeague": "Crea Nuova Lega",
     "createNewLeagueDescription": "Crea una nuova lega fantacalcio e invita i tuoi amici",
     "joinExistingLeague": "Partecipa a Lega",
-    "joinExistingLeagueDescription": "Inserisci l'ID della lega e il nome della tua squadra",
+    "joinExistingLeagueDescription": "Inserisci il codice della lega (8 caratteri) e il nome della tua squadra",
     "leagueName": "Nome Lega",
     "leagueNamePlaceholder": "Es. Lega degli Amici",
     "initialCredits": "Crediti Iniziali",
-    "leagueId": "ID Lega",
-    "leagueIdPlaceholder": "Inserisci l'ID della lega",
+    "leagueId": "Codice Lega",
+    "leagueIdPlaceholder": "Inserisci il codice della lega (8 caratteri)",
+    "joinCode": "Codice Partecipazione",
     "teamName": "Nome Squadra",
     "teamNamePlaceholder": "Es. I Campioni",
     "creating": "Creazione...",
@@ -140,6 +158,10 @@
       "auction": "Asta in corso",
       "completed": "Completata"
     },
+    "deleteConfirmTitle": "Conferma Eliminazione",
+    "deleteConfirmDescription": "Sei sicuro di voler eliminare la lega '{name}'? Questa azione non può essere annullata e tutti i dati associati verranno persi.",
+    "deleteSuccess": "Lega eliminata con successo",
+    "deleting": "Eliminazione...",
     "details": {
       "admin": "Amministratore",
       "teams": "Squadre",
@@ -208,7 +230,11 @@
   },
   "players": {
     "title": "Calciatori",
+    "leaguePlayersDesc": "Gestisci i calciatori della lega {leagueName}",
+    "playersList": "Lista Calciatori",
+    "playersListDesc": "Visualizza e gestisci tutti i calciatori disponibili",
     "import": "Importa Calciatori",
+    "importPlayers": "Importa Calciatori",
     "filterByPosition": "Filtra per Ruolo",
     "filterByTeam": "Filtra per Squadra",
     "noPlayers": "Nessun calciatore trovato",
@@ -267,7 +293,26 @@
       "D": "Difensore",
       "C": "Centrocampista",
       "A": "Attaccante"
-    }
+    },
+    "totalPlayers": "Totale Calciatori",
+    "totalValue": "Valore totale",
+    "value": "Valore",
+    "completion": "completamento",
+    "byPosition": "Per Ruolo",
+    "positionBreakdown": "Distribuzione calciatori per ruolo",
+    "positions": {
+      "P": "Portieri",
+      "D": "Difensori", 
+      "C": "Centrocampisti",
+      "A": "Attaccanti"
+    },
+    "free": "liberi",
+    "taken": "presi",
+    "showingCount": "Mostrando {showing} di {total}",
+    "availableCount": "{count} disponibili",
+    "assignedCount": "{count} assegnati",
+    "name": "Nome",
+    "noPlayersFound": "Nessun calciatore trovato"
   },
   "auction": {
     "title": "Asta Fantacalcio",
@@ -459,6 +504,7 @@
     "loadingLeagues": "Errore caricamento leghe:",
     "creatingLeague": "Errore nella creazione della lega",
     "joiningLeague": "Errore nella partecipazione alla lega",
+    "deletingLeague": "Errore nell'eliminazione della lega",
     "loadingLeague": "Errore caricamento lega:",
     "uploadError": "Errore durante l'upload del file",
     "deleteConfirm": "Sei sicuro di voler eliminare {name}?",

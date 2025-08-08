@@ -129,7 +129,7 @@ export default function PlayersStats({ players, leagueStatus }: PlayersStatsProp
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <Badge className={getStatusColor(leagueStatus)}>{t(`league.status.${leagueStatus.toLowerCase()}`)}</Badge>
+          <Badge className={getStatusColor(leagueStatus)}>{t(`leagues.status.${leagueStatus.toLowerCase()}`)}</Badge>
           <p className="text-xs text-muted-foreground mt-2">
             {calculatedStats.assigned > 0 && (
               <>

@@ -20,6 +20,10 @@ export interface AuctionEvents {
   'next-round-started': (auctionState: unknown) => void
   'user-joined': (user: { id: string; name: string }) => void
   'user-left': (user: { id: string; name: string }) => void
+  'team-joined': (data: { leagueId: string; teamName: string; userName: string; teamCount: number }) => void
+  'league-updated': (data: { leagueId: string; teamCount: number }) => void
+  'league-created': (data: { leagueId: string; leagueName: string; adminName: string; teamCount: number }) => void
+  'bot-config-updated': (data: { leagueId: string; isEnabled: boolean; botCount: number; intelligence: string }) => void
 }
 
 export function initializeSocketIO(server: HTTPServer): SocketIOServer {
@@ -34,6 +38,18 @@ export function initializeSocketIO(server: HTTPServer): SocketIOServer {
 
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id)
+
+    // Join leagues room (for general league updates)
+    socket.on('join-leagues', () => {
+      socket.join('leagues')
+      console.log(`Socket ${socket.id} joined leagues room`)
+    })
+
+    // Leave leagues room
+    socket.on('leave-leagues', () => {
+      socket.leave('leagues')
+      console.log(`Socket ${socket.id} left leagues room`)
+    })
 
     // Join auction room
     socket.on('join-auction', (leagueId: string) => {

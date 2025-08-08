@@ -172,10 +172,10 @@ export async function GET(request: NextRequest) {
       globalNeeds,
       availableByPosition,
       recommendations: {
-        P: globalNeeds.P > 0 && availableByPosition.P > 0,
-        D: globalNeeds.D > 0 && availableByPosition.D > 0,
-        C: globalNeeds.C > 0 && availableByPosition.C > 0,
-        A: globalNeeds.A > 0 && availableByPosition.A > 0,
+        P: availableByPosition.P > 0,
+        D: availableByPosition.D > 0,
+        C: availableByPosition.C > 0,
+        A: availableByPosition.A > 0,
       }
     })
 

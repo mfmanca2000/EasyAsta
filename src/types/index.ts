@@ -23,6 +23,7 @@ export interface League {
   id: string;
   name: string;
   adminId: string;
+  joinCode: string;
   credits: number;
   status: "SETUP" | "AUCTION" | "COMPLETED";
   createdAt: Date;

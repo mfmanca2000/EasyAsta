@@ -64,6 +64,7 @@ model League {
   id            String         @id @default(cuid())
   name          String
   adminId       String
+  joinCode      String         @unique
   credits       Int            @default(500)
   status        LeagueStatus   @default(SETUP)
   createdAt     DateTime       @default(now())

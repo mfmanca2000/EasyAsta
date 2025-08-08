@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateLeagueJoinCode } from "@/lib/utils";
+import { emitToLeaguesRoom } from "@/lib/socket-utils";
 import { z } from "zod";
 
 const createLeagueSchema = z.object({
@@ -29,12 +31,34 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
     }
 
+    // Genera un join code unico
+    let joinCode;
+    let isUnique = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+
+    while (!isUnique && attempts < maxAttempts) {
+      joinCode = generateLeagueJoinCode();
+      const existingLeague = await prisma.league.findUnique({
+        where: { joinCode }
+      });
+      if (!existingLeague) {
+        isUnique = true;
+      }
+      attempts++;
+    }
+
+    if (!isUnique) {
+      return NextResponse.json({ error: "Impossibile generare codice univoco" }, { status: 500 });
+    }
+
     // Crea la lega
     const league = await prisma.league.create({
       data: {
         name,
         credits,
         adminId: user.id,
+        joinCode: joinCode!,
         status: "SETUP",
       },
       include: {
@@ -57,6 +81,14 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
+
+    // Emit Socket.io event to notify users about the new league
+    emitToLeaguesRoom('league-created', {
+      leagueId: league.id,
+      leagueName: league.name,
+      adminName: league.admin.name || league.admin.email || 'Unknown Admin',
+      teamCount: league.teams.length
     });
 
     return NextResponse.json({ league }, { status: 201 });

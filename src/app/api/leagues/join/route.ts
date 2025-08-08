@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { emitToLeaguesRoom } from "@/lib/socket-utils";
 import { z } from "zod";
 
 const joinLeagueSchema = z.object({
-  leagueId: z.string().min(1, "ID lega richiesto"),
+  leagueId: z.string().min(8, "Codice lega deve essere di 8 caratteri").max(8, "Codice lega deve essere di 8 caratteri"),
   teamName: z.string().min(1, "Nome squadra richiesto").max(30, "Nome troppo lungo"),
 });
 
@@ -31,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Verifica che la lega esista e sia in stato SETUP
     const league = await prisma.league.findUnique({
-      where: { id: leagueId },
+      where: { joinCode: leagueId },
       include: {
         teams: true,
       },
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
       where: {
         userId_leagueId: {
           userId: user.id,
-          leagueId: leagueId,
+          leagueId: league.id,
         },
       },
     });
@@ -67,7 +68,7 @@ export async function POST(request: NextRequest) {
     // Verifica che il nome squadra non sia già usato nella lega
     const existingTeamName = await prisma.team.findFirst({
       where: {
-        leagueId: leagueId,
+        leagueId: league.id,
         name: teamName,
       },
     });
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
       data: {
         name: teamName,
         userId: user.id,
-        leagueId: leagueId,
+        leagueId: league.id,
         remainingCredits: league.credits,
       },
       include: {
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
     // Log dell'azione JOIN_LEAGUE
     await prisma.playerAction.create({
       data: {
-        leagueId: leagueId,
+        leagueId: league.id,
         playerId: user.id,
         action: 'JOIN_LEAGUE',
         targetTeamId: team.id,
@@ -117,6 +118,33 @@ export async function POST(request: NextRequest) {
         }
       }
     });
+
+    // Get updated team count for Socket.io event
+    const updatedLeague = await prisma.league.findUnique({
+      where: { id: league.id },
+      include: {
+        _count: {
+          select: { teams: true }
+        }
+      }
+    });
+
+    // Emit Socket.io events to notify users about the new team
+    if (updatedLeague) {
+      // Emit to the general leagues room for all users viewing leagues page
+      emitToLeaguesRoom('team-joined', {
+        leagueId: league.id,
+        teamName: teamName,
+        userName: user.name || user.email || 'Unknown User',
+        teamCount: updatedLeague._count.teams
+      });
+
+      // Also emit a general league update event
+      emitToLeaguesRoom('league-updated', {
+        leagueId: league.id,
+        teamCount: updatedLeague._count.teams
+      });
+    }
 
     return NextResponse.json({ team }, { status: 201 });
   } catch (error) {

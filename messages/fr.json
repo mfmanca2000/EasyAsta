@@ -8,9 +8,7 @@
     "delete": "Supprimer",
     "edit": "Modifier",
     "create": "Créer",
-    "back": "Retour",
-    "next": "Suivant",
-    "previous": "Précédent",
+    "back": "Retour",    
     "search": "Rechercher",
     "filter": "Filtrer",
     "all": "Tous",
@@ -28,7 +26,19 @@
     "manage": "Gérer",
     "view": "Voir",
     "total": "Total",
-    "remaining": "Restant"
+    "remaining": "Restant",
+    "refresh": "Actualiser",
+    "reset": "Reset",
+    "showing": "Mostrando",
+    "of": "de",
+    "perPage": "par page",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "selectFile": "Choisir un fichier"
+  },
+  "filters": {
+    "allPositions": "Tous les postes",
+    "allPlayers": "Tous les joueurs"
   },
   "auth": {
     "signIn": "Se connecter",
@@ -79,6 +89,7 @@
     "nextStepsDescription": "Commencez dès maintenant avec EasyAsta",
     "noLeagueFound": "Aucune ligue trouvée",
     "noTeamFound": "Aucune équipe trouvée",
+    "noTeamsFound": "Aucune équipe trouvée",
     "noActiveAuction": "Aucune enchère active",
     "joinLeague": "Rejoindre une Ligue",
     "viewRosters": "Voir les Effectifs",
@@ -95,7 +106,13 @@
     "quickActionsDescription": "Accès rapides aux fonctions principales",
     "browseLeagues": "Parcourir les Ligues",
     "createLeague": "Créer une Ligue",
-    "manageLeagues": "Gérer les Ligues"
+    "manageLeagues": "Gérer les Ligues",
+    "showingTeams": "Affichage de {shown} sur {total} équipes",
+    "viewAllTeams": "Voir Toutes les Équipes"
+  },
+  "teams": {
+    "complete": "Complète",
+    "viewRoster": "Voir l'Effectif"
   },
   "leagues": {
     "title": "Mes Ligues",
@@ -106,12 +123,13 @@
     "createNewLeague": "Créer une Nouvelle Ligue",
     "createNewLeagueDescription": "Créez une nouvelle ligue de fantasy football et invitez vos amis",
     "joinExistingLeague": "Rejoindre une Ligue",
-    "joinExistingLeagueDescription": "Entrez l'ID de la ligue et le nom de votre équipe",
+    "joinExistingLeagueDescription": "Entrez le code de la ligue (8 caractères) et le nom de votre équipe",
     "leagueName": "Nom de la Ligue",
     "leagueNamePlaceholder": "Ex. Ligue des Amis",
     "initialCredits": "Crédits Initiaux",
-    "leagueId": "ID Ligue",
-    "leagueIdPlaceholder": "Entrez l'ID de la ligue",
+    "leagueId": "Code Ligue",
+    "leagueIdPlaceholder": "Entrez le code de la ligue (8 caractères)",
+    "joinCode": "Code de Participation",
     "teamName": "Nom de l'Équipe",
     "teamNamePlaceholder": "Ex. Les Champions",
     "creating": "Création...",
@@ -140,6 +158,10 @@
       "auction": "Enchères en Cours",
       "completed": "Terminée"
     },
+    "deleteConfirmTitle": "Confirmer la Suppression",
+    "deleteConfirmDescription": "Êtes-vous sûr de vouloir supprimer la ligue '{name}'? Cette action ne peut pas être annulée et toutes les données associées seront perdues.",
+    "deleteSuccess": "Ligue supprimée avec succès",
+    "deleting": "Suppression...",
     "details": {
       "admin": "Administrateur",
       "teams": "Équipes",
@@ -208,7 +230,11 @@
   },
   "players": {
     "title": "Joueurs",
+    "leaguePlayersDesc": "Gérez les joueurs de la ligue {leagueName}",
+    "playersList": "Liste des Joueurs",
+    "playersListDesc": "Visualisez et gérez tous les joueurs disponibles",
     "import": "Importer des Joueurs",
+    "importPlayers": "Importer des Joueurs",
     "filterByPosition": "Filtrer par Poste",
     "filterByTeam": "Filtrer par Équipe",
     "noPlayers": "Aucun joueur trouvé",
@@ -267,7 +293,26 @@
       "D": "Défenseur",
       "C": "Milieu", 
       "A": "Attaquant"
-    }
+    },
+    "totalPlayers": "Total Joueurs",
+    "totalValue": "Valeur totale",
+    "value": "Valeur",
+    "completion": "achèvement",
+    "byPosition": "Par Poste",
+    "positionBreakdown": "Répartition des joueurs par poste",
+    "positions": {
+      "P": "Gardiens",
+      "D": "Défenseurs",
+      "C": "Milieux",
+      "A": "Attaquants"
+    },
+    "free": "libres",
+    "taken": "pris",
+    "showingCount": "Affichage de {showing} sur {total}",
+    "availableCount": "{count} disponibles",
+    "assignedCount": "{count} assignés",
+    "name": "Nom",
+    "noPlayersFound": "Aucun joueur trouvé"
   },
   "auction": {
     "title": "Enchères Fantasy Football",
@@ -459,6 +504,7 @@
     "loadingLeagues": "Erreur lors du chargement des ligues :",
     "creatingLeague": "Erreur lors de la création de la ligue",
     "joiningLeague": "Erreur lors de la participation à la ligue",
+    "deletingLeague": "Erreur lors de la suppression de la ligue",
     "loadingLeague": "Erreur lors du chargement de la ligue :",
     "uploadError": "Erreur lors du téléchargement du fichier",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer {name} ?",

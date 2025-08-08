@@ -39,6 +39,18 @@ app.prepare().then(() => {
   io.on('connection', (socket) => {
     console.log('Client connected:', socket.id)
 
+    // Join leagues room (for general league updates)
+    socket.on('join-leagues', () => {
+      socket.join('leagues')
+      console.log(`Socket ${socket.id} joined leagues room`)
+    })
+
+    // Leave leagues room
+    socket.on('leave-leagues', () => {
+      socket.leave('leagues')
+      console.log(`Socket ${socket.id} left leagues room`)
+    })
+
     // Join auction room with user authentication
     socket.on('join-auction', (data) => {
       const { leagueId, userId, userName } = data

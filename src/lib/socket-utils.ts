@@ -32,3 +32,17 @@ export function emitToAuctionRoom(leagueId: string, event: string, data: Record<
   io.to(roomName).emit(event, data)
   return true
 }
+
+/**
+ * Emit an event to the general leagues room
+ */
+export function emitToLeaguesRoom(event: string, data: Record<string, unknown>): boolean {
+  const io = getSocketIO()
+  if (!io) {
+    console.error(`[SOCKET] Cannot emit ${event} - Socket.io not available`)
+    return false
+  }
+  
+  io.to('leagues').emit(event, data)
+  return true
+}

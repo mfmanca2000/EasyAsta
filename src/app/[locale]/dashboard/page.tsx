@@ -28,6 +28,23 @@ interface DashboardData {
     status: string;
     hasActiveRound: boolean;
   }>;
+  myTeams: Array<{
+    id: string;
+    name: string;
+    leagueId: string;
+    leagueName: string;
+    remainingCredits: number;
+    playersCount: number;
+    totalPlayers: number;
+    leagueStatus: string;
+    isComplete: boolean;
+    players: {
+      P: number;
+      D: number;
+      C: number;
+      A: number;
+    };
+  }>;
   stats: {
     totalLeagues: number;
     totalTeams: number;
@@ -127,7 +144,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* My Leagues */}
         <Card>
           <CardHeader>
@@ -179,6 +196,74 @@ export default function Dashboard() {
                 <Link href="/leagues">
                   <Button variant="outline" className="w-full">
                     {t("dashboard.viewAllLeagues")}
+                  </Button>
+                </Link>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* My Teams */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Users className="h-5 w-5 mr-2" />
+              {t("dashboard.myTeams")}
+            </CardTitle>
+            <CardDescription>{t("dashboard.teamsDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!dashboardData || dashboardData.myTeams.length === 0 ? (
+              <>
+                <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noTeamsFound")}</p>
+                <Link href="/leagues">
+                  <Button variant="outline" className="w-full">
+                    {t("dashboard.joinLeague")}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <>
+                <div className="space-y-3 mb-4">
+                  {dashboardData.myTeams.slice(0, 3).map((team) => (
+                    <div key={team.id} className="flex items-center justify-between p-2 rounded-lg border">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">{team.name}</h4>
+                        <p className="text-xs text-muted-foreground">{team.leagueName}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {team.isComplete ? (
+                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                              {t("teams.complete")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">
+                              {team.playersCount}/25
+                            </Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">
+                            {team.remainingCredits}€
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          P:{team.players.P} D:{team.players.D} C:{team.players.C} A:{team.players.A}
+                        </div>
+                      </div>
+                      <Link href={`/leagues/${team.leagueId}/roster`}>
+                        <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
+                          {t("teams.viewRoster")}
+                        </Button>
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+                {dashboardData.myTeams.length > 3 && (
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {t("dashboard.showingTeams", { shown: 3, total: dashboardData.myTeams.length })}
+                  </p>
+                )}
+                <Link href="/leagues">
+                  <Button variant="outline" className="w-full">
+                    {t("dashboard.viewAllTeams")}
                   </Button>
                 </Link>
               </>

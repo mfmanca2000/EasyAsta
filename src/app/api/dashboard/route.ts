@@ -95,9 +95,29 @@ export async function GET() {
 
     const activeAuctions = allLeagues.filter((league) => league.status === "AUCTION");
 
+    // Prepare detailed team data
+    const myTeams = user.teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+      leagueId: team.league.id,
+      leagueName: team.league.name,
+      remainingCredits: team.remainingCredits,
+      playersCount: team.teamPlayers.length,
+      totalPlayers: 25, // 3P + 8D + 8C + 6A
+      leagueStatus: team.league.status,
+      isComplete: team.teamPlayers.length === 25,
+      players: {
+        P: team.teamPlayers.filter(tp => tp.player.position === 'P').length,
+        D: team.teamPlayers.filter(tp => tp.player.position === 'D').length,
+        C: team.teamPlayers.filter(tp => tp.player.position === 'C').length,
+        A: team.teamPlayers.filter(tp => tp.player.position === 'A').length,
+      }
+    }));
+
     return NextResponse.json({
       leagues: allLeagues,
       activeAuctions: activeAuctions,
+      myTeams: myTeams,
       stats: {
         totalLeagues: allLeagues.length,
         totalTeams: userLeagues.length,

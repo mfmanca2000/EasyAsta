@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createBotUsers, removeBotUsers } from '@/lib/bot-logic'
+import { emitToLeaguesRoom } from '@/lib/socket-utils'
 
 // GET - Ottieni configurazione bot per lega
 export async function GET(request: NextRequest) {
@@ -101,14 +102,15 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
+    // Get current bot count before changes
+    const currentBotCount = await prisma.team.count({
+      where: {
+        leagueId,
+        user: { isBot: true }
+      }
+    })
+
     await prisma.$transaction(async (tx) => {
-      // Get current bot count for audit log
-      const currentBotCount = await tx.team.count({
-        where: {
-          leagueId,
-          user: { isBot: true }
-        }
-      })
 
       // Upsert configurazione bot
       await tx.botConfig.upsert({
@@ -177,6 +179,54 @@ export async function POST(request: NextRequest) {
         user: { isBot: true }
       }
     })
+
+    // Get updated league info for socket emission
+    const updatedLeague = await prisma.league.findFirst({
+      where: { id: leagueId },
+      include: {
+        _count: { select: { teams: true } }
+      }
+    })
+
+    // Emit Socket.io events to notify users about bot changes
+    if (updatedLeague) {
+      if (isEnabled && finalBotCount > 0) {
+        // Get actual bot teams to emit proper names
+        const botTeams = await prisma.team.findMany({
+          where: {
+            leagueId,
+            user: { isBot: true }
+          },
+          include: {
+            user: true
+          }
+        })
+
+        // Emit bot-joined events for each bot when enabling bot configuration
+        botTeams.forEach(botTeam => {
+          emitToLeaguesRoom('team-joined', {
+            leagueId: leagueId,
+            teamName: botTeam.name,
+            userName: botTeam.user.name || 'Bot AI',
+            teamCount: updatedLeague._count.teams
+          })
+        })
+      }
+      
+      // Always emit a general league update event for any configuration change
+      emitToLeaguesRoom('league-updated', {
+        leagueId: leagueId,
+        teamCount: updatedLeague._count.teams
+      })
+      
+      // Emit specific bot configuration update event
+      emitToLeaguesRoom('bot-config-updated', {
+        leagueId: leagueId,
+        isEnabled: isEnabled,
+        botCount: finalBotCount,
+        intelligence: intelligence
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -253,6 +303,30 @@ export async function DELETE(request: NextRequest) {
         }
       })
     })
+
+    // Get updated league info for socket emission
+    const updatedLeague = await prisma.league.findFirst({
+      where: { id: leagueId },
+      include: {
+        _count: { select: { teams: true } }
+      }
+    })
+
+    // Emit Socket.io events to notify users about bot removal
+    if (updatedLeague) {
+      emitToLeaguesRoom('league-updated', {
+        leagueId: leagueId,
+        teamCount: updatedLeague._count.teams
+      })
+      
+      // Emit specific bot configuration update event
+      emitToLeaguesRoom('bot-config-updated', {
+        leagueId: leagueId,
+        isEnabled: false,
+        botCount: 0,
+        intelligence: 'MEDIUM' // Default since bots are disabled
+      })
+    }
 
     return NextResponse.json({
       success: true,

@@ -254,7 +254,7 @@ export default function LeagueDetailPage() {
         </Card>
       )}
 
-      {/* ID Lega per condivisione */}
+      {/* Join Code per condivisione */}
       <Card className="mt-6">
         <CardContent className="py-4">
           <div className="flex justify-between items-center">
@@ -262,7 +262,7 @@ export default function LeagueDetailPage() {
               <div className="font-medium">{t("leagues.details.shareId")}</div>
               <div className="text-sm text-muted-foreground">{t("leagues.details.shareIdDescription")}</div>
             </div>
-            <div className="font-mono text-lg bg-muted px-3 py-1 rounded">{league.id}</div>
+            <div className="font-mono text-lg bg-muted px-3 py-1 rounded">{league.joinCode}</div>
           </div>
         </CardContent>
       </Card>

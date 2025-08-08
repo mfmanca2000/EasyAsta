@@ -78,7 +78,7 @@ export default function NextRoundModal({
                         <Button
                           size="default"
                           variant={isRecommended ? "default" : "outline"}
-                          disabled={!isRecommended || loading}
+                          disabled={(nextRoundStats?.availableByPosition?.[position] ?? 0) === 0 || loading}
                           onClick={() => onStartNextRound(position)}
                           className="w-full h-auto py-3 px-4 text-sm whitespace-normal"
                         >

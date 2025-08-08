@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
+import { useSimpleSocket } from "@/hooks/useSimpleSocket";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Users, Trophy } from "lucide-react";
+import { Plus, Users, Trophy, Trash2 } from "lucide-react";
 import { redirect } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { LeaguesPageSkeleton } from "@/components/ui/league-skeleton";
@@ -16,6 +17,7 @@ import { LeaguesPageSkeleton } from "@/components/ui/league-skeleton";
 interface League {
   id: string;
   name: string;
+  joinCode: string;
   credits: number;
   status: "SETUP" | "AUCTION" | "COMPLETED";
   admin: {
@@ -52,6 +54,7 @@ export default function LeaguesPage() {
   const { data: session, status } = useSession();
   const t = useTranslations();
   const locale = useLocale();
+  const { socket } = useSimpleSocket();
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -65,6 +68,13 @@ export default function LeaguesPage() {
     leagueId: "",
     teamName: "",
   });
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; league: League | null }>({
+    show: false,
+    league: null,
+  });
+
+  // Ref for debouncing league updates
+  const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const fetchLeagues = useCallback(async () => {
     try {
@@ -80,14 +90,99 @@ export default function LeaguesPage() {
     }
   }, [t]);
 
+  // Debounced fetchLeagues to handle multiple rapid updates
+  const debouncedFetchLeagues = useCallback(() => {
+    if (updateTimeoutRef.current) {
+      clearTimeout(updateTimeoutRef.current);
+    }
+    updateTimeoutRef.current = setTimeout(() => {
+      fetchLeagues();
+    }, 200); // Reduced to 200ms for better responsiveness
+  }, [fetchLeagues]);
+
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect({ href: "/api/auth/signin", locale });
+      // API routes don't use locale prefixes, redirect directly
+      window.location.href = "/api/auth/signin";
+      return;
     }
     if (status === "authenticated") {
       fetchLeagues();
     }
   }, [status, locale, fetchLeagues]);
+
+  // Define Socket.io event handlers
+  const handleTeamJoined = useCallback((data: { leagueId: string; teamName: string; userName: string; teamCount: number }) => {
+    // Update team count immediately for responsiveness
+    setLeagues(prevLeagues => 
+      prevLeagues.map(league => 
+        league.id === data.leagueId 
+          ? { ...league, _count: { ...league._count, teams: data.teamCount } }
+          : league
+      )
+    );
+    // Also fetch fresh data after a delay to ensure accuracy
+    debouncedFetchLeagues();
+  }, [debouncedFetchLeagues]);
+
+  const handleLeagueUpdated = useCallback((data: { leagueId: string; teamCount: number }) => {
+    setLeagues(prevLeagues => 
+      prevLeagues.map(league => 
+        league.id === data.leagueId 
+          ? { ...league, _count: { ...league._count, teams: data.teamCount } }
+          : league
+      )
+    );
+    // Also fetch fresh data after a delay to ensure accuracy
+    debouncedFetchLeagues();
+  }, [debouncedFetchLeagues]);
+
+  const handleLeagueCreated = useCallback((data: { leagueId: string; leagueName: string; adminName: string; teamCount: number }) => {
+    // Refresh leagues to include the new league instead of trying to construct it
+    debouncedFetchLeagues();
+  }, [debouncedFetchLeagues]);
+
+  const handleBotConfigUpdated = useCallback((data: { leagueId: string; isEnabled: boolean; botCount: number; intelligence: string }) => {
+    // For bot config changes, fetch immediately since these are less frequent and important
+    fetchLeagues();
+  }, [fetchLeagues]);
+
+  // Socket.io listeners for real-time updates
+  useEffect(() => {
+    if (!socket) return;
+
+    // Join the leagues room to receive updates
+    socket.emit('join-leagues');
+
+    socket.on('team-joined', handleTeamJoined);
+    socket.on('league-updated', handleLeagueUpdated);
+    socket.on('league-created', handleLeagueCreated);
+    socket.on('bot-config-updated', handleBotConfigUpdated);
+
+    // Add connection status listeners
+    socket.on('connect', () => {
+      socket.emit('join-leagues');
+    });
+
+    return () => {
+      socket.emit('leave-leagues');
+      socket.off('team-joined', handleTeamJoined);
+      socket.off('league-updated', handleLeagueUpdated);
+      socket.off('league-created', handleLeagueCreated);
+      socket.off('bot-config-updated', handleBotConfigUpdated);
+      socket.off('connect');
+      socket.off('disconnect');
+    };
+  }, [socket, handleTeamJoined, handleLeagueUpdated, handleLeagueCreated, handleBotConfigUpdated]);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (updateTimeoutRef.current) {
+        clearTimeout(updateTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleCreateLeague = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +237,31 @@ export default function LeaguesPage() {
     } catch (error) {
       console.error(t("errors.joiningLeague"), error);
       alert(t("errors.joiningLeague"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteLeague = async () => {
+    if (!deleteConfirm.league) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/leagues/${deleteConfirm.league.id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setDeleteConfirm({ show: false, league: null });
+        fetchLeagues();
+        alert(t("leagues.deleteSuccess"));
+      } else {
+        const error = await response.json();
+        alert(error.error || t("errors.deletingLeague"));
+      }
+    } catch (error) {
+      console.error(t("errors.deletingLeague"), error);
+      alert(t("errors.deletingLeague"));
     } finally {
       setLoading(false);
     }
@@ -313,9 +433,21 @@ export default function LeaguesPage() {
                       {isAdmin ? t("common.manage") : t("common.view")}
                     </Button>
                   </Link>
+                  {isAdmin && (
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setDeleteConfirm({ show: true, league })}
+                    >
+                      <Trash2 className="mr-2 h-3 w-3" />
+                      {t("common.delete")}
+                    </Button>
+                  )}
                 </div>
 
-                <div className="mt-3 text-xs text-muted-foreground">ID: {league.id}</div>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  {t("leagues.joinCode")}: <span className="font-mono font-semibold">{league.joinCode}</span>
+                </div>
               </CardContent>
             </Card>
           );
@@ -340,6 +472,38 @@ export default function LeaguesPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Confirmation Dialog for Delete */}
+      {deleteConfirm.show && deleteConfirm.league && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>{t("leagues.deleteConfirmTitle")}</CardTitle>
+              <CardDescription>
+                {t("leagues.deleteConfirmDescription", { name: deleteConfirm.league.name })}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setDeleteConfirm({ show: false, league: null })}
+                  disabled={loading}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteLeague}
+                  disabled={loading}
+                >
+                  {loading ? t("leagues.deleting") : t("common.delete")}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );

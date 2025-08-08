@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import React, { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { X, CheckCircle, AlertCircle, Info } from "lucide-react";
 
@@ -21,9 +21,14 @@ const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const addToast = useCallback((toast: Omit<Toast, "id">) => {
-    const id = Math.random().toString(36).substring(2);
+    const id = `toast-${Date.now()}-${Math.random().toString(36).substring(2)}`;
     const newToast: Toast = { ...toast, id };
 
     setToasts((prev) => [...prev, newToast]);
@@ -48,7 +53,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast, clearToasts }}>
       {children}
-      <ToastContainer toasts={toasts} onRemove={removeToast} />
+      {mounted && <ToastContainer toasts={toasts} onRemove={removeToast} />}
     </ToastContext.Provider>
   );
 }

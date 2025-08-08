@@ -49,7 +49,7 @@ export function useLeague(leagueId: string) {
   const userTeam = league?.teams.find((team) => team.user.email === session?.user?.email) || null;
 
   // Verifica se l'utente è admin
-  const isAdmin = league?.admin.email === session?.user?.email;
+  const isAdmin = Boolean(league && session?.user?.email && league.admin.email === session.user.email);
 
   return {
     league,

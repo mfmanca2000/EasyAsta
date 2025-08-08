@@ -247,24 +247,45 @@ export async function createBotUsers(leagueId: string, count: number = 3): Promi
   const botUserIds: string[] = [];
 
   for (let i = 1; i <= count; i++) {
-    const botUser = await prisma.user.create({
-      data: {
-        email: `bot${i}@easyasta.local`,
+    // Genera email unico con timestamp per evitare conflitti
+    const timestamp = Date.now();
+    const botEmail = `bot${i}-${leagueId.substring(0, 8)}-${timestamp}@easyasta.local`;
+    
+    // Usa upsert per gestire eventuali duplicati
+    const botUser = await prisma.user.upsert({
+      where: { email: botEmail },
+      update: {
+        name: `🤖 Bot ${i}`,
+        role: "PLAYER",
+        isBot: true,
+      },
+      create: {
+        email: botEmail,
         name: `🤖 Bot ${i}`,
         role: "PLAYER",
         isBot: true,
       },
     });
 
-    // Crea team per il bot
-    await prisma.team.create({
-      data: {
-        name: `Squadra Bot ${i}`,
+    // Controlla se esiste già un team per questo bot in questa lega
+    const existingTeam = await prisma.team.findFirst({
+      where: {
         userId: botUser.id,
         leagueId: leagueId,
-        remainingCredits: 500, // Default credits
       },
     });
+
+    if (!existingTeam) {
+      // Crea team per il bot solo se non esiste
+      await prisma.team.create({
+        data: {
+          name: `Squadra Bot ${i}`,
+          userId: botUser.id,
+          leagueId: leagueId,
+          remainingCredits: 500, // Default credits
+        },
+      });
+    }
 
     botUserIds.push(botUser.id);
   }
