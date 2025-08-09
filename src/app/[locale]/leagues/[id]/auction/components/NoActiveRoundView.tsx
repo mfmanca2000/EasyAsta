@@ -1,8 +1,9 @@
 import { useTranslations } from "next-intl";
+import { useParams, useRouter } from "next/navigation";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Trophy, Users, Loader2 } from "lucide-react";
+import { Trophy, Users, Loader2, ArrowLeft } from "lucide-react";
 
 interface NoActiveRoundViewProps {
   isAdmin: boolean;
@@ -20,9 +21,24 @@ export default function NoActiveRoundView({
   onResetAuction,
 }: NoActiveRoundViewProps) {
   const t = useTranslations();
+  const params = useParams();
+  const router = useRouter();
+  const leagueId = params.id as string;
 
   return (
     <div className="container mx-auto p-6">
+      {/* Back Button */}
+      <div className="mb-4">
+        <Button 
+          onClick={() => router.push(`/${params.locale}/leagues/${leagueId}`)} 
+          variant="outline" 
+          size="sm"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t("common.back")}
+        </Button>
+      </div>
+      
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

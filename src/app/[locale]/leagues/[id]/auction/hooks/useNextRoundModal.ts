@@ -7,6 +7,7 @@ interface NextRoundStats {
     userName: string;
     composition: { P: number; D: number; C: number; A: number };
     needs: { P: number; D: number; C: number; A: number };
+    remainingCredits: number;
   }>;
   globalNeeds: { P: number; D: number; C: number; A: number };
   availableByPosition: { P: number; D: number; C: number; A: number };

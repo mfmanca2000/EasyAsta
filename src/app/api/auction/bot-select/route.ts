@@ -162,6 +162,15 @@ export async function POST(request: NextRequest) {
             roundId,
             message: 'Turno completato, pronto per risoluzione'
           })
+          
+          // Emit anche un secondo evento con un piccolo delay per forzare il refresh
+          setTimeout(() => {
+            globalThis.io?.to(`auction-${leagueId}`).emit('round-ready-for-resolution', {
+              leagueId,
+              roundId,
+              message: 'Turno completato, pronto per risoluzione (refresh)'
+            })
+          }, 100)
         }
       }
 
@@ -296,6 +305,15 @@ export async function POST(request: NextRequest) {
           roundId,
           message: 'Turno completato, pronto per risoluzione'
         })
+        
+        // Emit anche un secondo evento con un piccolo delay per forzare il refresh
+        setTimeout(() => {
+          globalThis.io?.to(`auction-${leagueId}`).emit('round-ready-for-resolution', {
+            leagueId,
+            roundId,
+            message: 'Turno completato, pronto per risoluzione (refresh)'
+          })
+        }, 100)
       }
       roundComplete = true
     }

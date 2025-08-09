@@ -1,6 +1,7 @@
 import * as XLSX from "xlsx";
 
 export interface PlayerData {
+  externalId?: string | null;
   name: string;
   position: "P" | "D" | "C" | "A";
   realTeam: string;
@@ -35,6 +36,7 @@ export function parseExcelFile(buffer: ArrayBuffer): ParseResult {
         continue;
       }
 
+      const externalId = row[0]; // Colonna "ID"
       const name = row[1];
       const realTeam = row[2];
       const position = row[3] as string;
@@ -73,6 +75,7 @@ export function parseExcelFile(buffer: ArrayBuffer): ParseResult {
       }
 
       players.push({
+        externalId: externalId ? String(externalId).trim() : null,
         name: name.trim().toUpperCase(),
         position: position as "P" | "D" | "C" | "A",
         realTeam: realTeam.trim().toLowerCase(),

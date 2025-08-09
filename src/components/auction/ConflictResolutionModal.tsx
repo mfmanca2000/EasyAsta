@@ -42,7 +42,7 @@ export default function ConflictResolutionModal({
                 <CardTitle className="text-lg">
                   {conflict.playerName}
                   <Badge variant="outline" className="ml-2">
-                    {conflict.winner.player?.price || 0} crediti
+                    {conflict.winner?.player?.price || 0} crediti
                   </Badge>
                 </CardTitle>
               </CardHeader>
@@ -58,7 +58,7 @@ export default function ConflictResolutionModal({
                       <Trophy className="h-4 w-4 text-green-600" />
                       <div>
                         <div className="font-semibold text-green-800">
-                          {conflict.winner.user?.name || conflict.winner.user?.email || "Unknown User"}
+                          {conflict.winner?.user?.name || conflict.winner?.user?.email || "Unknown User"}
                         </div>
                         <div className="text-sm text-green-600">
                           {t("auction.teamWon")}
@@ -67,7 +67,7 @@ export default function ConflictResolutionModal({
                     </div>
                     <Badge variant="default" className="bg-green-600">
                       {t("auction.randomNumber", { 
-                        number: conflict.randomNumbers[conflict.winner.userId] || conflict.winner.randomNumber || 0, 
+                        number: conflict.winner?.userId ? (conflict.randomNumbers[conflict.winner.userId] || conflict.winner?.randomNumber || 0) : 0, 
                         winner: `🏆` 
                       })}
                     </Badge>
@@ -75,8 +75,8 @@ export default function ConflictResolutionModal({
 
                   {/* Perdenti */}
                   {conflict.conflictedSelections
-                    .filter(selection => selection.userId !== conflict.winner.userId)
-                    .sort((a, b) => (conflict.randomNumbers[b.userId] || 0) - (conflict.randomNumbers[a.userId] || 0))
+                    .filter(selection => selection.userId !== conflict.winner?.userId)
+                    .sort((a, b) => (conflict.randomNumbers?.[b.userId] || 0) - (conflict.randomNumbers?.[a.userId] || 0))
                     .map((loser) => (
                       <div
                         key={loser.userId}
@@ -92,7 +92,7 @@ export default function ConflictResolutionModal({
                         </div>
                         <Badge variant="outline" className="border-red-300 text-red-700">
                           {t("auction.randomNumber", { 
-                            number: conflict.randomNumbers[loser.userId] || loser.randomNumber || 0, 
+                            number: conflict.randomNumbers?.[loser.userId] || loser.randomNumber || 0, 
                             winner: `` 
                           })}
                         </Badge>

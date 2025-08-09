@@ -3,10 +3,14 @@
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useEffect } from "react";
 import { redirect } from "@/i18n/navigation";
 import { usePlayers } from "@/hooks/usePlayers";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PlayersPageSkeleton } from "@/components/ui/players-skeleton";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 // Import custom hooks
 import { usePlayersFilters } from "./hooks/usePlayersFilters";
@@ -56,6 +60,21 @@ export default function PlayersPage() {
     leagueId,
     onImportSuccess: fetchPlayers,
   });
+
+  // Initial fetch of players
+  useEffect(() => {
+    if (leagueId && league) {
+      fetchPlayers({
+        search: searchTerm,
+        position: positionFilter,
+        available: availableFilter === 'all' ? undefined : availableFilter,
+        page: pagination.page,
+        limit: pagination.limit,
+        sortField: sorting.field,
+        sortDirection: sorting.direction,
+      });
+    }
+  }, [leagueId, league, searchTerm, positionFilter, availableFilter, pagination.page, pagination.limit, sorting.field, sorting.direction, fetchPlayers]);
 
   // Check authentication
   if (status === "loading" || adminLoading) {
@@ -124,7 +143,15 @@ export default function PlayersPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">{t("navigation.players")}</h1>
+        <div className="flex items-center gap-3">
+          <Link href={`/${locale}/leagues/${leagueId}`}>
+            <Button variant="ghost" size="sm" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              {t("common.back")}
+            </Button>
+          </Link>
+          <h1 className="text-3xl font-bold">{t("navigation.players")}</h1>
+        </div>
         <p className="text-muted-foreground">{t("players.leaguePlayersDesc", { leagueName: league.name })}</p>
       </div>
 

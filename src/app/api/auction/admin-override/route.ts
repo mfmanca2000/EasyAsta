@@ -116,6 +116,24 @@ export async function POST(request: NextRequest) {
             where: { id: selectionToCancel.id }
           })
 
+          // Controlla quante selezioni rimangono
+          const remainingSelections = await tx.playerSelection.count({
+            where: { roundId }
+          })
+
+          // Controlla il numero totale di squadre
+          const totalTeams = await tx.team.count({
+            where: { leagueId: round.leagueId }
+          })
+
+          // Se non tutti hanno selezionato, torna a SELECTION
+          if (remainingSelections < totalTeams && round.status === 'RESOLUTION') {
+            await tx.auctionRound.update({
+              where: { id: roundId },
+              data: { status: 'SELECTION' }
+            })
+          }
+
           // Log dell'azione admin
           await tx.adminAction.create({
             data: {
@@ -129,7 +147,10 @@ export async function POST(request: NextRequest) {
               metadata: {
                 targetTeamName: targetTeam.name,
                 cancelledPlayerName: selectionToCancel.player.name,
-                cancelledPlayerPrice: selectionToCancel.player.price
+                cancelledPlayerPrice: selectionToCancel.player.price,
+                remainingSelections,
+                totalTeams,
+                statusChangedToSelection: remainingSelections < totalTeams && round.status === 'RESOLUTION'
               }
             }
           })
@@ -244,6 +265,22 @@ export async function POST(request: NextRequest) {
         reason,
         adminName: session.user.name || session.user.email
       })
+
+      // Se abbiamo annullato una selezione e il round è tornato a SELECTION, emetti anche round-back-to-selection
+      if (action === 'cancel-selection') {
+        const updatedRound = await prisma.auctionRound.findFirst({
+          where: { id: roundId },
+          select: { status: true }
+        })
+        
+        if (updatedRound?.status === 'SELECTION') {
+          io.to(`auction-${round.leagueId}`).emit('round-back-to-selection', {
+            leagueId: round.leagueId,
+            roundId,
+            message: 'Round tornato in fase di selezione dopo annullamento'
+          })
+        }
+      }
     }
 
     return NextResponse.json(result)

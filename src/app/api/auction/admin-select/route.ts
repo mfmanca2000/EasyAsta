@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { emitToAuctionRoom } from '@/lib/socket-utils'
+import { emitToAuctionRoom, emitToUser } from '@/lib/socket-utils'
 import { z } from 'zod'
 
 const adminSelectSchema = z.object({
@@ -148,7 +148,8 @@ export async function POST(request: NextRequest) {
     })
 
     // Emitti eventi Socket.io per notificare la selezione admin
-    emitToAuctionRoom(round.leagueId, 'admin-player-selected', {
+    // Send full admin details to the admin and the target user
+    const adminEvent = {
       selection: result,
       leagueId: round.leagueId,
       roundId,
@@ -159,11 +160,42 @@ export async function POST(request: NextRequest) {
         name: targetTeam.name,
         userName: targetTeam.user.name
       }
+    }
+    
+    // Send full details to admin (session.user.id) and target user (targetTeam.userId)
+    emitToUser(session.user!.id!, 'admin-player-selected', adminEvent)
+    emitToUser(targetTeam.userId, 'admin-player-selected', adminEvent)
+    
+    // Send anonymous admin selection to other users
+    emitToAuctionRoom(round.leagueId, 'admin-player-selected', {
+      selection: {
+        ...result,
+        player: null // Hide player details for other users
+      },
+      leagueId: round.leagueId,
+      roundId,
+      isAdminAction: true,
+      adminReason: 'Selezione effettuata dall\'admin',
+      targetTeam: {
+        id: targetTeam.id,
+        name: targetTeam.name,
+        userName: targetTeam.user.name
+      }
     })
     
-    // Also emit the regular player-selected event for compatibility
-    emitToAuctionRoom(round.leagueId, 'player-selected', {
+    // Also emit the regular player-selected event with privacy
+    emitToUser(targetTeam.userId, 'player-selected', {
       selection: result,
+      leagueId: round.leagueId,
+      roundId
+    })
+    
+    // Send anonymous player-selected to others
+    emitToAuctionRoom(round.leagueId, 'player-selected', {
+      selection: {
+        ...result,
+        player: null // Hide player details for other users
+      },
       leagueId: round.leagueId,
       roundId
     })

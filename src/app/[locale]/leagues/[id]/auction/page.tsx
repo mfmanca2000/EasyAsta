@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
 import { useAuctionRealtime } from "@/hooks/useAuctionRealtime";
 import { useToast } from "@/components/ui/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw, ArrowLeft } from "lucide-react";
 
 // Import custom hooks
 import { useAuctionAdmin } from "./hooks/useAuctionAdmin";
@@ -31,10 +31,12 @@ import PlayerSelectionTable from "@/components/auction/PlayerSelectionTable";
 
 export default function AuctionPage() {
   const params = useParams();
+  const router = useRouter();
   const { data: session } = useSession();
   const t = useTranslations();
   // Loading state - will be updated after hooks are initialized
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const [isForceSync, setIsForceSync] = useState(false);
 
   const leagueId = params.id as string;
   const { addToast } = useToast();
@@ -62,21 +64,43 @@ export default function AuctionPage() {
     userName: session?.user?.name || session?.user?.email || undefined,
     onPlayerSelected: (data) => {
       const { selection } = data;
-      addToast({
-        type: "info",
-        title: t("auction.playerSelectedToast"),
-        description: `${selection.user?.name} → ${selection.player?.name}`,
-        duration: 3000,
-      });
+      // If player is null, it means we should show a generic message (privacy mode)
+      if (!selection.player) {
+        addToast({
+          type: "info",
+          title: t("auction.playerSelectedToast"),
+          description: t("auction.teamSelectedPlayer", { teamName: selection.user?.name || "A user" }),
+          duration: 3000,
+        });
+      } else {
+        // Show full details for the selecting user
+        addToast({
+          type: "info",
+          title: t("auction.playerSelectedToast"),
+          description: `${selection.user?.name} → ${selection.player?.name}`,
+          duration: 3000,
+        });
+      }
     },
     onAdminPlayerSelected: (data) => {
       const { selection, targetTeam } = data;
-      addToast({
-        type: "info",
-        title: t("auction.adminPlayerSelectedToast"),
-        description: `Admin → ${selection.player?.name} per ${targetTeam.name}`,
-        duration: 4000,
-      });
+      // If player is null, it means we should show a generic message (privacy mode)
+      if (!selection.player) {
+        addToast({
+          type: "info",
+          title: t("auction.adminPlayerSelectedToast"),
+          description: t("auction.adminSelectedForTeam", { teamName: targetTeam.name }),
+          duration: 4000,
+        });
+      } else {
+        // Show full details for admin and target user
+        addToast({
+          type: "info",
+          title: t("auction.adminPlayerSelectedToast"),
+          description: `Admin → ${selection.player?.name} per ${targetTeam.name}`,
+          duration: 4000,
+        });
+      }
     },
     onRoundResolved: (data) => {
       addToast({
@@ -179,6 +203,29 @@ export default function AuctionPage() {
     }
   };
 
+  // Force sync handler
+  const handleForceSync = async () => {
+    setIsForceSync(true);
+    try {
+      await refreshAuctionState();
+      addToast({
+        type: "success",
+        title: t("auction.syncCompleted"),
+        description: t("auction.stateRefreshed"),
+        duration: 2000,
+      });
+    } catch {
+      addToast({
+        type: "error",
+        title: t("auction.syncFailed"),
+        description: t("auction.tryAgain"),
+        duration: 3000,
+      });
+    } finally {
+      setIsForceSync(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -213,7 +260,28 @@ export default function AuctionPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       {/* Header Asta */}
-      <AuctionHeader currentRound={currentRound!} isConnected={isConnected} isSyncing={isSyncing} connectedUsers={connectedUsers} />
+      <div className="flex items-center justify-between">
+        {/* Back Button */}
+        <Button 
+          onClick={() => router.push(`/${params.locale}/leagues/${leagueId}`)} 
+          variant="outline" 
+          size="sm"
+          className="mr-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          {t("common.back")}
+        </Button>
+
+        <div className="flex-1">
+          <AuctionHeader currentRound={currentRound!} isConnected={isConnected} isSyncing={isSyncing} connectedUsers={connectedUsers} />
+        </div>
+
+        {/* Force Sync Button */}
+        <Button onClick={handleForceSync} disabled={isForceSync || isSyncing} variant="outline" size="sm" className="ml-4">
+          {isForceSync ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <RefreshCw className="w-4 h-4 mr-2" />}
+          {t("auction.forceSync")}
+        </Button>
+      </div>
 
       {/* Stato Utente */}
       <AuctionStatusCard userSelection={userSelection} />

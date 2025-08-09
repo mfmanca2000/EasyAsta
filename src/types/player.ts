@@ -3,6 +3,7 @@ import { Position, EntityId, PlayerId, LeagueId, TeamId } from "./common";
 // Base player interface - minimal data
 export interface BasePlayer {
   id: PlayerId;
+  externalId?: string | null;
   name: string;
   position: Position;
   realTeam: string;

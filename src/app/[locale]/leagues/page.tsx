@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Users, Trophy, Trash2 } from "lucide-react";
-import { redirect } from "@/i18n/navigation";
 import { Link } from "@/i18n/navigation";
 import { LeaguesPageSkeleton } from "@/components/ui/league-skeleton";
 
@@ -112,66 +111,66 @@ export default function LeaguesPage() {
   }, [status, locale, fetchLeagues]);
 
   // Define Socket.io event handlers
-  const handleTeamJoined = useCallback((data: { leagueId: string; teamName: string; userName: string; teamCount: number }) => {
-    // Update team count immediately for responsiveness
-    setLeagues(prevLeagues => 
-      prevLeagues.map(league => 
-        league.id === data.leagueId 
-          ? { ...league, _count: { ...league._count, teams: data.teamCount } }
-          : league
-      )
-    );
-    // Also fetch fresh data after a delay to ensure accuracy
-    debouncedFetchLeagues();
-  }, [debouncedFetchLeagues]);
+  const handleTeamJoined = useCallback(
+    (data: { leagueId: string; teamName: string; userName: string; teamCount: number }) => {
+      // Update team count immediately for responsiveness
+      setLeagues((prevLeagues) => prevLeagues.map((league) => (league.id === data.leagueId ? { ...league, _count: { ...league._count, teams: data.teamCount } } : league)));
+      // Also fetch fresh data after a delay to ensure accuracy
+      debouncedFetchLeagues();
+    },
+    [debouncedFetchLeagues]
+  );
 
-  const handleLeagueUpdated = useCallback((data: { leagueId: string; teamCount: number }) => {
-    setLeagues(prevLeagues => 
-      prevLeagues.map(league => 
-        league.id === data.leagueId 
-          ? { ...league, _count: { ...league._count, teams: data.teamCount } }
-          : league
-      )
-    );
-    // Also fetch fresh data after a delay to ensure accuracy
-    debouncedFetchLeagues();
-  }, [debouncedFetchLeagues]);
+  const handleLeagueUpdated = useCallback(
+    (data: { leagueId: string; teamCount: number }) => {
+      setLeagues((prevLeagues) => prevLeagues.map((league) => (league.id === data.leagueId ? { ...league, _count: { ...league._count, teams: data.teamCount } } : league)));
+      // Also fetch fresh data after a delay to ensure accuracy
+      debouncedFetchLeagues();
+    },
+    [debouncedFetchLeagues]
+  );
 
-  const handleLeagueCreated = useCallback((data: { leagueId: string; leagueName: string; adminName: string; teamCount: number }) => {
-    // Refresh leagues to include the new league instead of trying to construct it
-    debouncedFetchLeagues();
-  }, [debouncedFetchLeagues]);
+  const handleLeagueCreated = useCallback(
+    () => {
+      // Refresh leagues to include the new league instead of trying to construct it
+      debouncedFetchLeagues();
+    },
+    [debouncedFetchLeagues]
+  );
 
-  const handleBotConfigUpdated = useCallback((data: { leagueId: string; isEnabled: boolean; botCount: number; intelligence: string }) => {
-    // For bot config changes, fetch immediately since these are less frequent and important
-    fetchLeagues();
-  }, [fetchLeagues]);
+  const handleBotConfigUpdated = useCallback(
+    () => {
+      // For bot config changes, fetch immediately since these are less frequent and important
+      fetchLeagues();
+    },
+    [fetchLeagues]
+  );
 
   // Socket.io listeners for real-time updates
   useEffect(() => {
     if (!socket) return;
 
     // Join the leagues room to receive updates
-    socket.emit('join-leagues');
+    socket.emit("join-leagues");
 
-    socket.on('team-joined', handleTeamJoined);
-    socket.on('league-updated', handleLeagueUpdated);
-    socket.on('league-created', handleLeagueCreated);
-    socket.on('bot-config-updated', handleBotConfigUpdated);
+    socket.on("team-joined", handleTeamJoined);
+    socket.on("league-updated", handleLeagueUpdated);
+    socket.on("league-created", handleLeagueCreated);
+    socket.on("bot-config-updated", handleBotConfigUpdated);
 
     // Add connection status listeners
-    socket.on('connect', () => {
-      socket.emit('join-leagues');
+    socket.on("connect", () => {
+      socket.emit("join-leagues");
     });
 
     return () => {
-      socket.emit('leave-leagues');
-      socket.off('team-joined', handleTeamJoined);
-      socket.off('league-updated', handleLeagueUpdated);
-      socket.off('league-created', handleLeagueCreated);
-      socket.off('bot-config-updated', handleBotConfigUpdated);
-      socket.off('connect');
-      socket.off('disconnect');
+      socket.emit("leave-leagues");
+      socket.off("team-joined", handleTeamJoined);
+      socket.off("league-updated", handleLeagueUpdated);
+      socket.off("league-created", handleLeagueCreated);
+      socket.off("bot-config-updated", handleBotConfigUpdated);
+      socket.off("connect");
+      socket.off("disconnect");
     };
   }, [socket, handleTeamJoined, handleLeagueUpdated, handleLeagueCreated, handleBotConfigUpdated]);
 
@@ -244,7 +243,7 @@ export default function LeaguesPage() {
 
   const handleDeleteLeague = async () => {
     if (!deleteConfirm.league) return;
-    
+
     setLoading(true);
     try {
       const response = await fetch(`/api/leagues/${deleteConfirm.league.id}`, {
@@ -434,11 +433,7 @@ export default function LeaguesPage() {
                     </Button>
                   </Link>
                   {isAdmin && (
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setDeleteConfirm({ show: true, league })}
-                    >
+                    <Button size="sm" variant="destructive" onClick={() => setDeleteConfirm({ show: true, league })}>
                       <Trash2 className="mr-2 h-3 w-3" />
                       {t("common.delete")}
                     </Button>
@@ -480,24 +475,14 @@ export default function LeaguesPage() {
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>{t("leagues.deleteConfirmTitle")}</CardTitle>
-              <CardDescription>
-                {t("leagues.deleteConfirmDescription", { name: deleteConfirm.league.name })}
-              </CardDescription>
+              <CardDescription>{t("leagues.deleteConfirmDescription", { name: deleteConfirm.league.name })}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setDeleteConfirm({ show: false, league: null })}
-                  disabled={loading}
-                >
+                <Button variant="outline" onClick={() => setDeleteConfirm({ show: false, league: null })} disabled={loading}>
                   {t("common.cancel")}
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleDeleteLeague}
-                  disabled={loading}
-                >
+                <Button variant="destructive" onClick={handleDeleteLeague} disabled={loading}>
                   {loading ? t("leagues.deleting") : t("common.delete")}
                 </Button>
               </div>

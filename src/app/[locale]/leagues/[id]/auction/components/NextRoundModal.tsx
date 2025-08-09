@@ -11,6 +11,7 @@ interface NextRoundStats {
     userName: string;
     composition: { P: number; D: number; C: number; A: number };
     needs: { P: number; D: number; C: number; A: number };
+    remainingCredits: number;
   }>;
   globalNeeds: { P: number; D: number; C: number; A: number };
   availableByPosition: { P: number; D: number; C: number; A: number };
@@ -98,7 +99,12 @@ export default function NextRoundModal({
               <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
                 {nextRoundStats.teamStats.map((team, index) => (
                   <div key={index} className="flex items-center justify-between text-sm p-3 border rounded">
-                    <span className="font-medium">{team.teamName}</span>
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">{team.teamName}</span>
+                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+                        {team.remainingCredits}€
+                      </span>
+                    </div>
                     <div className="flex gap-3 text-xs">
                       {(["P", "D", "C", "A"] as const).map((pos) => (
                         <span 

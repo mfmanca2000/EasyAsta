@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Bot, Settings, Trash2 } from "lucide-react";
 
 interface BotConfig {
@@ -23,6 +24,7 @@ interface BotConfigPanelProps {
   botCount: number;
   setBotCount: React.Dispatch<React.SetStateAction<number>>;
   loading: boolean;
+  initialLoading?: boolean;
   onUpdateConfig: (newConfig: Partial<BotConfig>) => Promise<void>;
   onRemoveBots: () => Promise<void>;
 }
@@ -33,6 +35,7 @@ export default function BotConfigPanel({
   botCount,
   setBotCount,
   loading,
+  initialLoading = false,
   onUpdateConfig,
   onRemoveBots,
 }: BotConfigPanelProps) {
@@ -54,15 +57,19 @@ export default function BotConfigPanel({
             <Label>{t("admin.enableTestMode")}</Label>
             <p className="text-sm text-muted-foreground">{t("admin.testModeDesc")}</p>
           </div>
-          <Switch 
-            checked={config.isEnabled} 
-            onCheckedChange={(enabled) => onUpdateConfig({ isEnabled: enabled })} 
-            disabled={loading} 
-          />
+          {initialLoading ? (
+            <Skeleton className="h-6 w-12" />
+          ) : (
+            <Switch 
+              checked={config.isEnabled} 
+              onCheckedChange={(enabled) => onUpdateConfig({ isEnabled: enabled })} 
+              disabled={loading} 
+            />
+          )}
         </div>
 
         {/* Configurazioni Bot */}
-        {config.isEnabled && (
+        {config.isEnabled && !initialLoading && (
           <>
             <Separator />
 
@@ -145,6 +152,35 @@ export default function BotConfigPanel({
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t("admin.removeBots")}
               </Button>
+            </div>
+          </>
+        )}
+
+        {/* Loading skeleton quando la modalità test è attiva ma stiamo ancora caricando */}
+        {initialLoading && config.isEnabled && (
+          <>
+            <Separator />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Skeleton className="h-9 w-32" />
+              <Skeleton className="h-9 w-28" />
             </div>
           </>
         )}

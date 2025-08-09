@@ -60,16 +60,60 @@ export async function POST(request: NextRequest) {
       }, { status: 403 })
     }
 
+    // Get teams data needed for conflict transformation
+    const allTeams = await prisma.team.findMany({
+      where: { leagueId: round.league.id },
+      include: {
+        user: true,
+        teamPlayers: {
+          include: {
+            player: true,
+          },
+        },
+      },
+    });
+
     const result = await resolveRound(roundId)
     
     // Emetti eventi Socket.io appropriati
     if (globalThis.io) {
       // Se ci sono conflitti, emetti evento per mostrare il modal
       if (result.conflicts && result.conflicts.length > 0) {
+        // Transform conflicts to the format expected by ConflictResolutionModal
+        const transformedConflicts = result.conflicts.map(conflict => {
+          const winner = conflict.conflicts.find(c => c.isWinner);
+          const winnerSelection = round.selections.find(s => 
+            s.playerId === conflict.playerId && 
+            allTeams.find(t => t.id === winner?.teamId)?.userId === s.userId
+          );
+          
+          return {
+            playerId: conflict.playerId,
+            playerName: conflict.playerName,
+            conflictedSelections: conflict.conflicts.map(conflictResult => {
+              const team = allTeams.find(t => t.id === conflictResult.teamId);
+              return round.selections.find(s => 
+                s.playerId === conflict.playerId && 
+                s.userId === team?.userId
+              );
+            }).filter(Boolean),
+            winner: winnerSelection || null,
+            randomNumbers: Object.fromEntries(
+              conflict.conflicts.map(c => {
+                const team = allTeams.find(t => t.id === c.teamId);
+                const selection = round.selections.find(s => 
+                  s.playerId === conflict.playerId && s.userId === team?.userId
+                );
+                return [selection?.userId || c.teamId, c.randomNumber];
+              }).filter(([userId]) => userId)
+            )
+          };
+        });
+
         globalThis.io.to(`auction-${round.league.id}`).emit('conflict-resolution', {
           leagueId: round.league.id,
           roundId,
-          conflicts: result.conflicts,
+          conflicts: transformedConflicts,
           roundContinues: result.roundContinues,
           assignments: result.assignments
         })

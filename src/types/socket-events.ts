@@ -36,7 +36,7 @@ export interface ConflictResolution {
   playerId: string;
   playerName: string;
   conflictedSelections: PlayerSelection[];
-  winner: PlayerSelection;
+  winner: PlayerSelection | null;
   randomNumbers: Record<string, number>;
 }
 

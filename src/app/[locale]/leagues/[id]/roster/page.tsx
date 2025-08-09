@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLeague } from "@/hooks/useLeague";
+import { useSocketIO } from "@/hooks/useSocketIO";
 import { TeamWithPlayers } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +25,12 @@ export default function RosterPage() {
   const locale = params.locale as string;
   const t = useTranslations();
   const { league, userTeam, loading, fetchLeague } = useLeague(leagueId);
+  const { socket } = useSocketIO({ 
+    leagueId,
+    userId: session?.user?.email || undefined,
+    userName: session?.user?.name || undefined,
+    enabled: !!leagueId && status === "authenticated"
+  });
   const [selectedTeam, setSelectedTeam] = useState<TeamWithPlayers | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [positionFilter, setPositionFilter] = useState<"all" | "P" | "D" | "C" | "A">("all");
@@ -58,6 +65,37 @@ export default function RosterPage() {
       }
     }
   }, [league, selectedTeam]);
+
+  // Socket.io listener per aggiornamenti real-time dell'asta
+  useEffect(() => {
+    if (!socket || !leagueId) return;
+
+    const handlePlayerSelected = () => {
+      // Aggiorna i dati della lega quando viene selezionato un calciatore
+      fetchLeague();
+    };
+
+    const handleRoundResolved = () => {
+      // Aggiorna i dati della lega quando viene risolto un turno
+      fetchLeague();
+    };
+
+    const handleAuctionStateUpdate = () => {
+      // Aggiorna i dati della lega per qualsiasi cambio di stato
+      fetchLeague();
+    };
+
+    // Ascolta gli eventi Socket.io
+    socket.on("player-selected", handlePlayerSelected);
+    socket.on("round-resolved", handleRoundResolved);
+    socket.on("auction-state-update", handleAuctionStateUpdate);
+
+    return () => {
+      socket.off("player-selected", handlePlayerSelected);
+      socket.off("round-resolved", handleRoundResolved);
+      socket.off("auction-state-update", handleAuctionStateUpdate);
+    };
+  }, [socket, leagueId, fetchLeague]);
 
   const isAdmin = league?.admin?.email === session?.user?.email;
 
@@ -108,10 +146,12 @@ export default function RosterPage() {
 
   const getRosterComposition = (team: TeamWithPlayers) => {
     const composition = { P: 0, D: 0, C: 0, A: 0 };
+    let totalSpent = 0;
     team.teamPlayers.forEach((tp) => {
       composition[tp.player.position]++;
+      totalSpent += tp.player.price;
     });
-    return composition;
+    return { ...composition, totalSpent };
   };
 
   const getFilteredPlayers = () => {
@@ -157,7 +197,7 @@ export default function RosterPage() {
   }
 
   const filteredPlayers = getFilteredPlayers();
-  const composition = selectedTeam ? getRosterComposition(selectedTeam) : { P: 0, D: 0, C: 0, A: 0 };
+  const composition = selectedTeam ? getRosterComposition(selectedTeam) : { P: 0, D: 0, C: 0, A: 0, totalSpent: 0 };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -175,173 +215,190 @@ export default function RosterPage() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-4 gap-6">
-        {/* Sidebar Squadre */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">{t("roster.selectTeam")}</CardTitle>
-              <CardDescription>{t("roster.selectTeamDescription")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {league.teams.map((team) => {
-                const teamComposition = getRosterComposition(team);
-                const totalPlayers = team.teamPlayers.length;
-                const isSelected = selectedTeam?.id === team.id;
-                const isUserTeam = team.user.email === session?.user?.email;
+      {/* Team Selector */}
+      <div className="mb-6">
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">{t("roster.selectTeam")}</label>
+                <Select
+                  value={selectedTeam?.id || ""}
+                  onValueChange={(teamId) => {
+                    const team = league.teams.find((team) => team.id === teamId);
+                    if (team) setSelectedTeam(team);
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder={t("roster.selectTeamDescription")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {league.teams.map((team) => {
+                      const totalPlayers = team.teamPlayers.length;
+                      const isUserTeam = team.user.email === session?.user?.email;
 
-                return (
-                  <Button key={team.id} variant={isSelected ? "default" : "outline"} className="w-full justify-start h-auto p-3" onClick={() => setSelectedTeam(team)}>
-                    <div className="text-left w-full">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold">{team.name}</span>
-                        {isUserTeam && <Badge variant="secondary">{t("roster.yourTeam")}</Badge>}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{team.user.name}</div>
-                      <div className="text-xs mt-1">{t("roster.playersCount", { count: totalPlayers })}</div>
-                      <div className="flex gap-1 mt-1">
-                        <span className="text-xs">P:{teamComposition.P}</span>
-                        <span className="text-xs">D:{teamComposition.D}</span>
-                        <span className="text-xs">C:{teamComposition.C}</span>
-                        <span className="text-xs">A:{teamComposition.A}</span>
-                      </div>
-                    </div>
-                  </Button>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Contenuto Principale */}
-        <div className="lg:col-span-3 space-y-6">
-          {selectedTeam ? (
-            <>
-              {/* Info Squadra */}
-              <Card>
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        <Users className="h-5 w-5" />
-                        {selectedTeam.name}
-                      </CardTitle>
-                      <CardDescription>{t("roster.owner", { name: selectedTeam.user.name || selectedTeam.user.email, credits: selectedTeam.remainingCredits })}</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-4 gap-4 text-center">
-                    <div className="space-y-2">
-                      {getPositionBadge("P")}
-                      <div className={`text-lg font-bold ${composition.P === 3 ? "text-green-600" : "text-orange-600"}`}>{composition.P}/3</div>
-                      <div className="text-xs text-muted-foreground">{t("roster.positions.P")}</div>
-                    </div>
-                    <div className="space-y-2">
-                      {getPositionBadge("D")}
-                      <div className={`text-lg font-bold ${composition.D === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.D}/8</div>
-                      <div className="text-xs text-muted-foreground">{t("roster.positions.D")}</div>
-                    </div>
-                    <div className="space-y-2">
-                      {getPositionBadge("C")}
-                      <div className={`text-lg font-bold ${composition.C === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.C}/8</div>
-                      <div className="text-xs text-muted-foreground">{t("roster.positions.C")}</div>
-                    </div>
-                    <div className="space-y-2">
-                      {getPositionBadge("A")}
-                      <div className={`text-lg font-bold ${composition.A === 6 ? "text-green-600" : "text-orange-600"}`}>{composition.A}/6</div>
-                      <div className="text-xs text-muted-foreground">{t("roster.positions.A")}</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Filtri */}
-              <Card>
-                <CardContent className="py-4">
-                  <div className="flex gap-4">
-                    <div className="flex-1">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder={t("roster.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
-                      </div>
-                    </div>
-                    <Select value={positionFilter} onValueChange={(value: "all" | "P" | "D" | "C" | "A") => setPositionFilter(value)}>
-                      <SelectTrigger className="w-40">
-                        <Filter className="mr-2 h-4 w-4" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t("roster.allPositions")}</SelectItem>
-                        <SelectItem value="P">{t("roster.positions.P")}</SelectItem>
-                        <SelectItem value="D">{t("roster.positions.D")}</SelectItem>
-                        <SelectItem value="C">{t("roster.positions.C")}</SelectItem>
-                        <SelectItem value="A">{t("roster.positions.A")}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Lista Calciatori */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("roster.rosterPlayers", { count: filteredPlayers.length })}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {filteredPlayers.length > 0 ? (
-                    <div className="grid gap-2">
-                      {filteredPlayers.map((player) => (
-                        <div key={player.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
-                          <div className="flex items-center gap-3">
-                            {getPositionBadge(player.position)}
-                            <div>
-                              <div className="font-semibold">{player.name}</div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <TeamLogo teamName={player.realTeam} size={16} />
-                                <span>{player.realTeam}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <div className="text-right">
-                              <div className="font-semibold">{player.price}M</div>
-                              <div className="text-xs text-muted-foreground">{t("common.price")}</div>
-                            </div>
-                            {isAdmin && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDeletePlayer(player.id)}
-                                disabled={deletingPlayerId === player.id}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                      return (
+                        <SelectItem key={team.id} value={team.id}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">{team.name}</span>
+                            {isUserTeam && (
+                              <Badge variant="secondary" className="text-xs">
+                                {t("roster.yourTeam")}
+                              </Badge>
                             )}
+                            <span className="text-xs text-muted-foreground ml-auto">
+                              ({totalPlayers}/25)
+                            </span>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">{searchTerm || positionFilter !== "all" ? t("roster.noPlayersFound") : t("roster.noPlayersInRoster")}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </>
-          ) : (
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Contenuto Principale */}
+      <div className="space-y-6">
+        {selectedTeam ? (
+          <>
+            {/* Info Squadra */}
             <Card>
-              <CardContent className="py-12 text-center">
-                <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t("roster.selectTeamTitle")}</h3>
-                <p className="text-muted-foreground">{t("roster.selectTeamText")}</p>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="h-5 w-5" />
+                      {selectedTeam.name}
+                    </CardTitle>
+                    <CardDescription>{t("roster.owner", { name: selectedTeam.user.name || selectedTeam.user.email })}</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">{t("roster.creditsSpent")}</div>
+                      <div className="text-3xl font-bold text-red-600">{composition.totalSpent}M</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm text-muted-foreground">{t("roster.creditsRemaining")}</div>
+                      <div className="text-3xl font-bold text-green-600">{selectedTeam.remainingCredits}M</div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-4 text-center">
+                  <div className="space-y-2">
+                    {getPositionBadge("P")}
+                    <div className={`text-lg font-bold ${composition.P === 3 ? "text-green-600" : "text-orange-600"}`}>{composition.P}/3</div>
+                    <div className="text-xs text-muted-foreground">{t("roster.positions.P")}</div>
+                  </div>
+                  <div className="space-y-2">
+                    {getPositionBadge("D")}
+                    <div className={`text-lg font-bold ${composition.D === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.D}/8</div>
+                    <div className="text-xs text-muted-foreground">{t("roster.positions.D")}</div>
+                  </div>
+                  <div className="space-y-2">
+                    {getPositionBadge("C")}
+                    <div className={`text-lg font-bold ${composition.C === 8 ? "text-green-600" : "text-orange-600"}`}>{composition.C}/8</div>
+                    <div className="text-xs text-muted-foreground">{t("roster.positions.C")}</div>
+                  </div>
+                  <div className="space-y-2">
+                    {getPositionBadge("A")}
+                    <div className={`text-lg font-bold ${composition.A === 6 ? "text-green-600" : "text-orange-600"}`}>{composition.A}/6</div>
+                    <div className="text-xs text-muted-foreground">{t("roster.positions.A")}</div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
-          )}
-        </div>
+
+            {/* Filtri */}
+            <Card>
+              <CardContent className="py-4">
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder={t("roster.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+                    </div>
+                  </div>
+                  <Select value={positionFilter} onValueChange={(value: "all" | "P" | "D" | "C" | "A") => setPositionFilter(value)}>
+                    <SelectTrigger className="w-40">
+                      <Filter className="mr-2 h-4 w-4" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("roster.allPositions")}</SelectItem>
+                      <SelectItem value="P">{t("roster.positions.P")}</SelectItem>
+                      <SelectItem value="D">{t("roster.positions.D")}</SelectItem>
+                      <SelectItem value="C">{t("roster.positions.C")}</SelectItem>
+                      <SelectItem value="A">{t("roster.positions.A")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lista Calciatori */}
+            <Card>
+              <CardHeader>
+                <CardTitle>{t("roster.rosterPlayers", { count: filteredPlayers.length })}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredPlayers.length > 0 ? (
+                  <div className="grid gap-2">
+                    {filteredPlayers.map((player) => (
+                      <div key={player.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                        <div className="flex items-center gap-3">
+                          {getPositionBadge(player.position)}
+                          <div>
+                            <div className="font-semibold">{player.name}</div>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <TeamLogo teamName={player.realTeam} size={16} />
+                              <span>{player.realTeam}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="font-semibold">{player.price}M</div>
+                            <div className="text-xs text-muted-foreground">{t("common.price")}</div>
+                          </div>
+                          {isAdmin && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeletePlayer(player.id)}
+                              disabled={deletingPlayerId === player.id}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">{searchTerm || positionFilter !== "all" ? t("roster.noPlayersFound") : t("roster.noPlayersInRoster")}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Users className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">{t("roster.selectTeamTitle")}</h3>
+              <p className="text-muted-foreground">{t("roster.selectTeamText")}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

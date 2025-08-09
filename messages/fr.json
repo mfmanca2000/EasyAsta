@@ -1,6 +1,7 @@
 {
   "common": {
     "loading": "Chargement...",
+    "uploading": "Chargement en cours...",
     "error": "Erreur",
     "success": "Succès",
     "cancel": "Annuler",
@@ -34,7 +35,8 @@
     "perPage": "par page",
     "next": "Suivant",
     "previous": "Précédent",
-    "selectFile": "Choisir un fichier"
+    "selectFile": "Choisir un fichier",
+    "change": "Changer"
   },
   "filters": {
     "allPositions": "Tous les postes",
@@ -197,7 +199,9 @@
     "selectTeamDescription": "Sélectionnez une équipe pour voir son effectif",
     "yourTeam": "Vous",
     "playersCount": "{count} joueurs",
-    "owner": "Propriétaire : {name} | Crédits restants : {credits}",
+    "owner": "Propriétaire : {name}",
+    "creditsSpent": "Crédits dépensés",
+    "creditsRemaining": "Crédits restants",
     "totalPlayers": "{count}/25 joueurs",
     "searchPlaceholder": "Rechercher par nom ou équipe...",
     "allPositions": "Toutes les positions",
@@ -312,7 +316,19 @@
     "availableCount": "{count} disponibles",
     "assignedCount": "{count} assignés",
     "name": "Nom",
-    "noPlayersFound": "Aucun joueur trouvé"
+    "noPlayersFound": "Aucun joueur trouvé",
+    "dropFileHere": "Glissez le fichier Excel ici",
+    "formatRequired": "Format Excel requis",
+    "orClickToSelect": "ou cliquez pour choisir",
+    "columnId": "Colonne 'ID'",
+    "columnName": "Colonne 'Giocatore'",
+    "columnTeam": "Colonne 'Squadra'",
+    "columnPosition": "Colonne 'Ruolo'", 
+    "columnPrice": "Colonne 'Quotazione'",
+    "numericValue": "valeur numérique",
+    "idValue": "code d'identification unique",
+    "realTeam": "nom d'équipe (ex. Juventus, Milan)",
+    "playerName": "nom du joueur (ex. Ronaldo, Messi)"
   },
   "auction": {
     "title": "Enchères Fantasy Football",
@@ -345,6 +361,11 @@
     "selections": "{count} sélections",
     "selection": "Sélection",
     "resolution": "Résolution",
+    "forceSync": "Synchroniser",
+    "syncCompleted": "Synchronisation Terminée",
+    "stateRefreshed": "État mis à jour avec succès",
+    "syncFailed": "Synchronisation Échouée",
+    "tryAgain": "Réessayez plus tard",
     "selectedPlayer": "✓ Vous avez sélectionné : {playerName}",
     "randomNumber": "Nombre aléatoire : {number} {winner}",
     "waitingForOthers": "En attente des autres joueurs...",
@@ -386,7 +407,10 @@
       "A": "attaquant"
     },
     "playerSelectedToast": "Sélection Effectuée",
+    "playerSelected": "Footballeur sélectionné",
     "adminPlayerSelectedToast": "Admin: Sélection Effectuée",
+    "teamSelectedPlayer": "{teamName} a sélectionné un footballeur",
+    "adminSelectedForTeam": "L'admin a sélectionné un footballeur pour {teamName}",
     "roundResolvedToast": "Tour Résolu",
     "roundResolvedDescription": "Les joueurs ont été assignés aux équipes",
     "conflictResolutionTitle": "Résolution Conflit",
@@ -518,6 +542,8 @@
     "selectPlayerError": "Erreur lors de la sélection",
     "resolveRoundError": "Erreur lors de la résolution",
     "nextRoundError": "Erreur lors du démarrage du tour",
-    "loadingStats": "Erreur lors du chargement des statistiques :"
+    "loadingStats": "Erreur lors du chargement des statistiques :",
+    "fileRequired": "Un fichier est requis",
+    "invalidFileType": "Type de fichier non supporté"
   }
 }

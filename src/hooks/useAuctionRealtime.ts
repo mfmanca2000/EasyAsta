@@ -122,10 +122,10 @@ export function useAuctionRealtime({
           id: data.selection.id,
           roundId: data.roundId,
           userId: data.selection.user.id,
-          playerId: data.selection.player.id,
+          playerId: data.selection.player.id, // Use player.id from the nested player object
           isWinner: false,
           createdAt: new Date(),
-          player: data.selection.player,
+          player: data.selection.player, // This might be null for privacy
           user: {
             id: data.selection.user.id,
             name: data.selection.user.name,
@@ -133,7 +133,7 @@ export function useAuctionRealtime({
           },
         },
         userId: data.selection.user.id,
-        playerName: data.selection.player.name,
+        playerName: data.selection.player?.name || "Hidden Player", // Handle null player
         teamName: data.selection.user.name,
       };
 
@@ -156,10 +156,10 @@ export function useAuctionRealtime({
           id: data.selection.id,
           roundId: data.roundId,
           userId: data.selection.user.id,
-          playerId: data.selection.player.id,
+          playerId: data.selection.player.id, // Use player.id from the nested player object
           isWinner: false,
           createdAt: new Date(),
-          player: data.selection.player,
+          player: data.selection.player, // This might be null for privacy
           user: {
             id: data.selection.user.id,
             name: data.selection.user.name,
@@ -167,7 +167,7 @@ export function useAuctionRealtime({
           },
         },
         userId: data.selection.user.id,
-        playerName: data.selection.player.name,
+        playerName: data.selection.player?.name || "Hidden Player", // Handle null player
         teamName: data.targetTeam.name,
         isAdminAction: data.isAdminAction,
         adminReason: data.adminReason,
@@ -180,7 +180,12 @@ export function useAuctionRealtime({
     // Round ready for resolution
     const handleRoundReadyForResolution = (data: RoundReadyData) => {
       console.log("Round ready for resolution:", data);
+      // Force immediate refresh
       refreshAuctionState();
+      // Also force a second refresh with small delay to ensure state sync
+      setTimeout(() => {
+        refreshAuctionState();
+      }, 50);
       onRoundReadyForResolution?.(data);
     };
 

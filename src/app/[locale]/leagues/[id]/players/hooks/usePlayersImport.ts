@@ -23,37 +23,41 @@ export function usePlayersImport({ leagueId, onImportSuccess }: UsePlayersImport
 
   const importPlayers = async (file: File): Promise<ImportResult> => {
     if (!file) {
-      return { success: false, error: t('errors.fileRequired') };
+      return { success: false, error: t("errors.fileRequired") };
     }
 
-    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
-      return { success: false, error: t('errors.invalidFileType') };
+    if (!file.name.endsWith(".xlsx") && !file.name.endsWith(".xls")) {
+      return { success: false, error: t("errors.invalidFileType") };
     }
 
     setUploading(true);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('leagueId', leagueId);
+      formData.append("file", file);
+      formData.append("leagueId", leagueId);
 
-      const response = await fetch('/api/players/import', {
-        method: 'POST',
+      const response = await fetch("/api/players/import", {
+        method: "POST",
         body: formData,
       });
 
       const result = await response.json();
 
+      console.log("Import result:", result);
+
       if (result.success) {
         onImportSuccess?.();
       }
 
+      console.log("FATTO!!!");
+
       return result;
     } catch (error) {
-      console.error('Import error:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : t('errors.uploadError') 
+      console.error("Import error:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : t("errors.uploadError"),
       };
     } finally {
       setUploading(false);

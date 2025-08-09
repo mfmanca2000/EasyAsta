@@ -28,7 +28,7 @@ export function usePlayers(leagueId: string) {
     loading: false,
     pagination: {
       page: 1,
-      limit: 50,
+      limit: -1, // Show all players by default
       total: 0,
       totalPages: 0,
       hasNext: false,
@@ -42,6 +42,8 @@ export function usePlayers(leagueId: string) {
 
   const fetchPlayers = useCallback(
     async (filters?: { search?: string; position?: string; available?: string; page?: number; limit?: number; sortField?: string; sortDirection?: "asc" | "desc" }) => {
+      console.log("Fetching players...");
+
       if (!leagueId) return;
 
       setState((prev) => ({ ...prev, loading: true }));

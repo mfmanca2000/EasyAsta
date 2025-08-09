@@ -137,7 +137,8 @@ export async function GET(request: NextRequest) {
           D: maxByPosition.D - composition.D,
           C: maxByPosition.C - composition.C,
           A: maxByPosition.A - composition.A,
-        }
+        },
+        remainingCredits: team.remainingCredits
       }
     })
 

@@ -51,15 +51,24 @@ export function initializeSocketIO(server: HTTPServer): SocketIOServer {
       console.log(`Socket ${socket.id} left leagues room`)
     })
 
-    // Join auction room
-    socket.on('join-auction', (leagueId: string) => {
+    // Join auction room with user information
+    socket.on('join-auction', (data: { leagueId: string; userId?: string; userName?: string }) => {
+      const { leagueId, userId, userName } = data
+      
+      // Join auction room
       socket.join(`auction-${leagueId}`)
       console.log(`Socket ${socket.id} joined auction room: auction-${leagueId}`)
       
+      // Join user-specific room if userId is provided
+      if (userId) {
+        socket.join(`user-${userId}`)
+        console.log(`Socket ${socket.id} joined user room: user-${userId}`)
+      }
+      
       // Notifica altri utenti che qualcuno si è unito
       socket.to(`auction-${leagueId}`).emit('user-joined', {
-        id: socket.id,
-        name: 'User' // In seguito aggiungeremo il nome reale dall'auth
+        id: userId || socket.id,
+        name: userName || 'User'
       })
     })
 

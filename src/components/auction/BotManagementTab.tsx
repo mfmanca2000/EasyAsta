@@ -18,6 +18,7 @@ interface BotManagementTabProps {
 export default function BotManagementTab({ leagueId, currentRound }: BotManagementTabProps) {
   const {
     loading,
+    initialLoading,
     config,
     setConfig,
     activeBots,
@@ -37,7 +38,8 @@ export default function BotManagementTab({ leagueId, currentRound }: BotManageme
         setConfig={setConfig}
         botCount={botCount}
         setBotCount={setBotCount}
-        loading={loading}
+        loading={loading || initialLoading}
+        initialLoading={initialLoading}
         onUpdateConfig={updateBotConfig}
         onRemoveBots={removeBots}
       />

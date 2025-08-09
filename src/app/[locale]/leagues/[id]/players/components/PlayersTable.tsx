@@ -157,22 +157,26 @@ export default function PlayersTable({
       </div>
 
       {/* Pagination */}
-      {pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>
-              {t("common.showing")} {(pagination.page - 1) * pagination.limit + 1}-{Math.min(pagination.page * pagination.limit, pagination.total)} {t("common.of")} {pagination.total}
-            </span>
-            <select value={pagination.limit} onChange={(e) => onLimitChange(Number(e.target.value))} className="border rounded px-2 py-1 text-sm">
-              <option value={10}>10</option>
-              <option value={25}>25</option>
-              <option value={50}>50</option>
-              <option value={100}>100</option>
-            </select>
-            <span>{t("common.perPage")}</span>
-          </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>
+            {pagination.limit === -1 
+              ? `${t("common.showing")} ${pagination.total} ${t("common.of")} ${pagination.total}` 
+              : `${t("common.showing")} ${(pagination.page - 1) * pagination.limit + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} ${t("common.of")} ${pagination.total}`
+            }
+          </span>
+          <select value={pagination.limit} onChange={(e) => onLimitChange(Number(e.target.value))} className="border rounded px-2 py-1 text-sm">
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={-1}>{t("common.all")}</option>
+          </select>
+          <span>{t("common.perPage")}</span>
+        </div>
 
-          <div className="flex items-center gap-2">
+          {pagination.totalPages > 1 && pagination.limit !== -1 && (
+            <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={onPrevPage} disabled={pagination.page <= 1}>
               <ChevronLeft className="h-4 w-4" />
               {t("common.previous")}
@@ -193,9 +197,9 @@ export default function PlayersTable({
               {t("common.next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
-          </div>
+            </div>
+          )}
         </div>
-      )}
     </div>
   );
 }

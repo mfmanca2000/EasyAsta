@@ -98,6 +98,7 @@ model Team {
 
 model Player {
   id            String            @id @default(cuid())
+  externalId    String?           // ID from Excel file (e.g., Serie A official ID)
   name          String
   position      Position
   realTeam      String

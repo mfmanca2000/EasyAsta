@@ -23,6 +23,7 @@ interface BotStatus {
 
 interface UseBotManagementReturn {
   loading: boolean;
+  initialLoading: boolean;
   config: BotConfig;
   setConfig: React.Dispatch<React.SetStateAction<BotConfig>>;
   activeBots: number;
@@ -47,6 +48,7 @@ export function useBotManagement(
 ): UseBotManagementReturn {
   //const t = useTranslations("auction");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [config, setConfig] = useState<BotConfig>({
     isEnabled: false,
     selectionDelayMin: 2,
@@ -67,6 +69,8 @@ export function useBotManagement(
       }
     } catch {
       console.error("Errore caricamento config bot");
+    } finally {
+      setInitialLoading(false);
     }
   }, [leagueId]);
 
@@ -181,6 +185,7 @@ export function useBotManagement(
 
   return {
     loading,
+    initialLoading,
     config,
     setConfig,
     activeBots,
