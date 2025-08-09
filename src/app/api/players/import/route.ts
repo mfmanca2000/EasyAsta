@@ -79,12 +79,24 @@ export async function POST(request: NextRequest) {
     });
 
     if (!league) {
-      return NextResponse.json({ error: "Lega non trovata o accesso negato" }, { status: 403 });
+      return NextResponse.json(
+        {
+          error: "Lega non trovata o accesso negato",
+          success: false,
+        } as ApiResponse,
+        { status: 403 }
+      );
     }
 
     // Verifica che la lega sia in stato SETUP
     if (league.status !== "SETUP") {
-      return NextResponse.json({ error: "Impossibile importare calciatori: lega non in setup" }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: "Impossibile importare calciatori: lega non in setup",
+          success: false,
+        } as ApiResponse,
+        { status: 400 }
+      );
     }
 
     // Leggi il file Excel
@@ -96,7 +108,8 @@ export async function POST(request: NextRequest) {
         {
           error: "Errori nel parsing del file",
           details: parseResult.errors,
-        },
+          success: false,
+        } as ApiResponse,
         { status: 400 }
       );
     }
@@ -109,7 +122,8 @@ export async function POST(request: NextRequest) {
           error: "Errori di validazione",
           details: validationErrors,
           warning: true,
-        },
+          success: false,
+        } as ApiResponse,
         { status: 400 }
       );
     }
@@ -135,19 +149,28 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
+        success: true,
         message: "Calciatori importati con successo",
-        count: result.count,
-        summary: {
-          portieri: parseResult.players.filter((p) => p.position === "P").length,
-          difensori: parseResult.players.filter((p) => p.position === "D").length,
-          centrocampisti: parseResult.players.filter((p) => p.position === "C").length,
-          attaccanti: parseResult.players.filter((p) => p.position === "A").length,
+        data: {
+          count: result.count,
+          summary: {
+            portieri: parseResult.players.filter((p) => p.position === "P").length,
+            difensori: parseResult.players.filter((p) => p.position === "D").length,
+            centrocampisti: parseResult.players.filter((p) => p.position === "C").length,
+            attaccanti: parseResult.players.filter((p) => p.position === "A").length,
+          },
         },
-      },
+      } as ApiResponse,
       { status: 201 }
     );
   } catch (error) {
     console.error("Errore import calciatori:", error);
-    return NextResponse.json({ error: "Errore interno del server" }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: "Errore interno del server",
+        success: false,
+      } as ApiResponse,
+      { status: 500 }
+    );
   }
 }

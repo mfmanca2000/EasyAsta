@@ -104,7 +104,7 @@ export default function PlayersPage() {
       const result = await doImportPlayers(file);
 
       if (result.success) {
-        alert(`${t("common.success")}! ${result.data?.count} ${t("navigation.players")} ${t("players.import")}.`);
+        alert(`${t("common.success")}! ${result.data?.count} ${t("players.importSuccess")}.`);
         closeImportForm();
       } else {
         if (result.warning) {
