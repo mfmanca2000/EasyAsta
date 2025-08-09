@@ -11,77 +11,87 @@ export async function GET() {
       return NextResponse.json({ error: "Non autenticato" }, { status: 401 });
     }
 
-    // Recupera l'utente dal database
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: {
-        teams: {
-          include: {
-            league: {
-              include: {
-                admin: true,
-                teams: {
-                  include: {
-                    user: true,
-                  },
-                },
-                rounds: {
-                  orderBy: { createdAt: "desc" },
-                  take: 1,
-                },
-              },
-            },
-            teamPlayers: {
-              include: {
-                player: true,
-              },
-            },
-          },
+    // Optimized queries - separate calls to avoid deep nesting
+    const [user, userTeams, adminLeagues] = await Promise.all([
+      // Get basic user info
+      prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true, email: true }
+      }),
+      
+      // Get user's teams with optimized includes
+      prisma.team.findMany({
+        where: {
+          user: { email: session.user.email }
         },
-        adminLeagues: {
-          include: {
-            teams: {
-              include: {
-                user: true,
-              },
-            },
-            rounds: {
-              orderBy: { createdAt: "desc" },
-              take: 1,
-            },
+        include: {
+          league: {
+            select: {
+              id: true,
+              name: true,
+              status: true,
+              adminId: true,
+              _count: { select: { teams: true } }
+            }
           },
+          _count: { select: { teamPlayers: true } }
+        }
+      }),
+      
+      // Get admin leagues separately
+      prisma.league.findMany({
+        where: {
+          admin: { email: session.user.email }
         },
-      },
-    });
+        select: {
+          id: true,
+          name: true,
+          status: true,
+          _count: { select: { teams: true } }
+        }
+      })
+    ]);
 
     if (!user) {
       return NextResponse.json({ error: "Utente non trovato" }, { status: 404 });
     }
 
-    // Prepara i dati della risposta
-    const userLeagues = user.teams.map((team) => ({
+    // Check for active rounds efficiently
+    const leagueIds = [...userTeams.map(t => t.league.id), ...adminLeagues.map(l => l.id)];
+    const activeRounds = leagueIds.length > 0 ? await prisma.auctionRound.findMany({
+      where: {
+        leagueId: { in: leagueIds },
+        status: { not: "COMPLETED" }
+      },
+      select: { leagueId: true }
+    }) : [];
+    
+    const activeRoundLeagueIds = new Set(activeRounds.map(r => r.leagueId));
+
+    // Prepare response data with optimized structure
+    const userLeagues = userTeams.map((team) => ({
       id: team.league.id,
       name: team.league.name,
       status: team.league.status,
       isAdmin: team.league.adminId === user.id,
       teamName: team.name,
       remainingCredits: team.remainingCredits,
-      playersCount: team.teamPlayers.length,
-      totalTeams: team.league.teams.length,
-      hasActiveRound: team.league.rounds.length > 0 && team.league.rounds[0].status !== "COMPLETED",
+      playersCount: team._count.teamPlayers,
+      totalTeams: team.league._count.teams,
+      hasActiveRound: activeRoundLeagueIds.has(team.league.id),
     }));
 
-    const adminLeagues = user.adminLeagues.map((league) => ({
+    const adminLeaguesFormatted = adminLeagues.map((league) => ({
       id: league.id,
       name: league.name,
       status: league.status,
-      totalTeams: league.teams.length,
-      hasActiveRound: league.rounds.length > 0 && league.rounds[0].status !== "COMPLETED",
+      totalTeams: league._count.teams,
+      hasActiveRound: activeRoundLeagueIds.has(league.id),
     }));
 
     // Combina le leghe (rimuove duplicati se l'utente è sia giocatore che admin)
     const allLeagues = [...userLeagues];
-    adminLeagues.forEach((adminLeague) => {
+    adminLeaguesFormatted.forEach((adminLeague) => {
       if (!userLeagues.find((ul) => ul.id === adminLeague.id)) {
         allLeagues.push({
           ...adminLeague,
@@ -95,24 +105,45 @@ export async function GET() {
 
     const activeAuctions = allLeagues.filter((league) => league.status === "AUCTION");
 
-    // Prepare detailed team data
-    const myTeams = user.teams.map((team) => ({
-      id: team.id,
-      name: team.name,
-      leagueId: team.league.id,
-      leagueName: team.league.name,
-      remainingCredits: team.remainingCredits,
-      playersCount: team.teamPlayers.length,
-      totalPlayers: 25, // 3P + 8D + 8C + 6A
-      leagueStatus: team.league.status,
-      isComplete: team.teamPlayers.length === 25,
-      players: {
-        P: team.teamPlayers.filter(tp => tp.player.position === 'P').length,
-        D: team.teamPlayers.filter(tp => tp.player.position === 'D').length,
-        C: team.teamPlayers.filter(tp => tp.player.position === 'C').length,
-        A: team.teamPlayers.filter(tp => tp.player.position === 'A').length,
-      }
-    }));
+    // Get position breakdowns for teams that need them
+    const detailedPositionCounts = userTeams.length > 0 ? await prisma.$queryRaw<Array<{
+      teamId: string;
+      position: string;
+      count: number;
+    }>>`
+      SELECT tp."teamId", p.position, COUNT(*)::int as count
+      FROM "TeamPlayer" tp
+      JOIN "Player" p ON tp."playerId" = p.id
+      WHERE tp."teamId" = ANY(${userTeams.map(t => t.id)})
+      GROUP BY tp."teamId", p.position
+    ` : [];
+
+    // Prepare detailed team data with optimized queries
+    const myTeams = userTeams.map((team) => {
+      const teamPositions = detailedPositionCounts.filter(pc => pc.teamId === team.id);
+      const getPositionCount = (position: string) => 
+        teamPositions.find(pc => pc.position === position)?.count || 0;
+      
+      const totalPlayers = team._count.teamPlayers;
+      
+      return {
+        id: team.id,
+        name: team.name,
+        leagueId: team.league.id,
+        leagueName: team.league.name,
+        remainingCredits: team.remainingCredits,
+        playersCount: totalPlayers,
+        totalPlayers: 25, // 3P + 8D + 8C + 6A
+        leagueStatus: team.league.status,
+        isComplete: totalPlayers === 25,
+        players: {
+          P: getPositionCount('P'),
+          D: getPositionCount('D'),
+          C: getPositionCount('C'),
+          A: getPositionCount('A'),
+        }
+      };
+    });
 
     return NextResponse.json({
       leagues: allLeagues,

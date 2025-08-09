@@ -144,9 +144,9 @@ export default function Dashboard() {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 h-[600px]">
         {/* My Leagues */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Trophy className="h-5 w-5 mr-2" />
@@ -154,57 +154,67 @@ export default function Dashboard() {
             </CardTitle>
             <CardDescription>{t("dashboard.leaguesDescription")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col">
             {!dashboardData || dashboardData.leagues.length === 0 ? (
               <>
-                <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noLeagueFound")}</p>
-                <Link href="/leagues">
-                  <Button variant="outline" className="w-full">
-                    {t("dashboard.joinLeague")}
-                  </Button>
-                </Link>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noLeagueFound")}</p>
+                </div>
+                <div className="mt-auto">
+                  <Link href="/leagues">
+                    <Button variant="outline" className="w-full">
+                      {t("dashboard.joinLeague")}
+                    </Button>
+                  </Link>
+                </div>
               </>
             ) : (
               <>
-                <div className="space-y-3 mb-4">
-                  {dashboardData.leagues.slice(0, 3).map((league) => (
-                    <div key={league.id} className="flex items-center justify-between p-2 rounded-lg border">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{league.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          {getStatusBadge(league.status)}
-                          {league.isAdmin && (
-                            <Badge variant="outline" className="text-xs">
-                              Admin
-                            </Badge>
+                <div className="flex-1">
+                  <div className="space-y-3 mb-4">
+                    {dashboardData.leagues.slice(0, 3).map((league) => (
+                      <div key={league.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 transition-colors">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <h4 className="font-medium text-sm truncate mb-2">{league.name}</h4>
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {getStatusBadge(league.status)}
+                            {league.isAdmin && (
+                              <Badge variant="outline" className="text-xs">
+                                Admin
+                              </Badge>
+                            )}
+                          </div>
+                          {league.teamName && (
+                            <p className="text-xs text-muted-foreground truncate">
+                              {league.teamName} • {league.remainingCredits}€ • {league.playersCount}/25
+                            </p>
                           )}
                         </div>
-                        {league.teamName && (
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {league.teamName} • {league.remainingCredits}€ • {league.playersCount}/25
-                          </p>
-                        )}
+                        <div className="flex-shrink-0 ml-2">
+                          <Link href={`/leagues/${league.id}`}>
+                            <Button size="sm" variant="outline" className="text-xs h-8">
+                              {t("common.view")}
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
-                      <Link href={`/leagues/${league.id}`}>
-                        <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
-                          {t("common.view")}
-                        </Button>
-                      </Link>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-                <Link href="/leagues">
-                  <Button variant="outline" className="w-full">
-                    {t("dashboard.viewAllLeagues")}
-                  </Button>
-                </Link>
+                <div className="mt-auto">
+                  <Link href="/leagues">
+                    <Button variant="outline" className="w-full">
+                      {t("dashboard.viewAllLeagues")}
+                    </Button>
+                  </Link>
+                </div>
               </>
             )}
           </CardContent>
         </Card>
 
         {/* My Teams */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Users className="h-5 w-5 mr-2" />
@@ -212,67 +222,77 @@ export default function Dashboard() {
             </CardTitle>
             <CardDescription>{t("dashboard.teamsDescription")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col">
             {!dashboardData || dashboardData.myTeams.length === 0 ? (
               <>
-                <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noTeamsFound")}</p>
-                <Link href="/leagues">
-                  <Button variant="outline" className="w-full">
-                    {t("dashboard.joinLeague")}
-                  </Button>
-                </Link>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noTeamsFound")}</p>
+                </div>
+                <div className="mt-auto">
+                  <Link href="/leagues">
+                    <Button variant="outline" className="w-full">
+                      {t("dashboard.joinLeague")}
+                    </Button>
+                  </Link>
+                </div>
               </>
             ) : (
               <>
-                <div className="space-y-3 mb-4">
-                  {dashboardData.myTeams.slice(0, 3).map((team) => (
-                    <div key={team.id} className="flex items-center justify-between p-2 rounded-lg border">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{team.name}</h4>
-                        <p className="text-xs text-muted-foreground">{team.leagueName}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {team.isComplete ? (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                              {t("teams.complete")}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs">
-                              {team.playersCount}/25
-                            </Badge>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {team.remainingCredits}€
-                          </span>
+                <div className="flex-1">
+                  <div className="space-y-3 mb-4">
+                    {dashboardData.myTeams.slice(0, 3).map((team) => (
+                      <div key={team.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 transition-colors">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <h4 className="font-medium text-sm truncate mb-1">{team.name}</h4>
+                          <p className="text-xs text-muted-foreground mb-2 truncate">{team.leagueName}</p>
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            {team.isComplete ? (
+                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                {t("teams.complete")}
+                              </Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">
+                                {team.playersCount}/25
+                              </Badge>
+                            )}
+                            <span className="text-xs text-muted-foreground">
+                              {team.remainingCredits}€
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            P:{team.players.P} D:{team.players.D} C:{team.players.C} A:{team.players.A}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          P:{team.players.P} D:{team.players.D} C:{team.players.C} A:{team.players.A}
+                        <div className="flex-shrink-0 ml-2">
+                          <Link href={`/leagues/${team.leagueId}/roster`}>
+                            <Button size="sm" variant="outline" className="text-xs h-8">
+                              {t("teams.viewRoster")}
+                            </Button>
+                          </Link>
                         </div>
                       </div>
-                      <Link href={`/leagues/${team.leagueId}/roster`}>
-                        <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
-                          {t("teams.viewRoster")}
-                        </Button>
-                      </Link>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                  {dashboardData.myTeams.length > 3 && (
+                    <p className="text-xs text-muted-foreground mb-2">
+                      {t("dashboard.showingTeams", { shown: 3, total: dashboardData.myTeams.length })}
+                    </p>
+                  )}
                 </div>
-                {dashboardData.myTeams.length > 3 && (
-                  <p className="text-xs text-muted-foreground mb-2">
-                    {t("dashboard.showingTeams", { shown: 3, total: dashboardData.myTeams.length })}
-                  </p>
-                )}
-                <Link href="/leagues">
-                  <Button variant="outline" className="w-full">
-                    {t("dashboard.viewAllTeams")}
-                  </Button>
-                </Link>
+                <div className="mt-auto">
+                  <Link href="/leagues">
+                    <Button variant="outline" className="w-full">
+                      {t("dashboard.viewAllTeams")}
+                    </Button>
+                  </Link>
+                </div>
               </>
             )}
           </CardContent>
         </Card>
 
         {/* Active Auctions */}
-        <Card>
+        <Card className="flex flex-col">
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="h-5 w-5 mr-2" />
@@ -280,40 +300,50 @@ export default function Dashboard() {
             </CardTitle>
             <CardDescription>{t("dashboard.auctionsDescription")}</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex-1 flex flex-col">
             {!dashboardData || dashboardData.activeAuctions.length === 0 ? (
               <>
-                <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noActiveAuction")}</p>
-                <Link href="/leagues">
-                  <Button variant="outline" className="w-full">
-                    {t("dashboard.searchAuctions")}
-                  </Button>
-                </Link>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground mb-4">{t("dashboard.noActiveAuction")}</p>
+                </div>
+                <div className="mt-auto">
+                  <Link href="/leagues">
+                    <Button variant="outline" className="w-full">
+                      {t("dashboard.searchAuctions")}
+                    </Button>
+                  </Link>
+                </div>
               </>
             ) : (
               <>
-                <div className="space-y-3 mb-4">
-                  {dashboardData.activeAuctions.slice(0, 3).map((auction) => (
-                    <div key={auction.id} className="flex items-center justify-between p-2 rounded-lg border">
-                      <div className="flex-1">
-                        <h4 className="font-medium text-sm">{auction.name}</h4>
-                        <Badge variant="default" className="bg-orange-500 mt-1">
-                          {t("auction.status.active")}
-                        </Badge>
+                <div className="flex-1">
+                  <div className="space-y-3 mb-4">
+                    {dashboardData.activeAuctions.slice(0, 3).map((auction) => (
+                      <div key={auction.id} className="flex items-center justify-between p-3 rounded-lg border hover:bg-slate-50 transition-colors">
+                        <div className="flex-1 min-w-0 pr-3">
+                          <h4 className="font-medium text-sm truncate mb-2">{auction.name}</h4>
+                          <Badge variant="default" className="bg-orange-500 text-xs">
+                            {t("auction.status.active")}
+                          </Badge>
+                        </div>
+                        <div className="flex-shrink-0 ml-2">
+                          <Link href={`/leagues/${auction.id}/auction`}>
+                            <Button size="sm" variant="outline" className="text-xs h-8">
+                              {t("dashboard.joinAuction")}
+                            </Button>
+                          </Link>
+                        </div>
                       </div>
-                      <Link href={`/leagues/${auction.id}/auction`}>
-                        <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
-                          {t("dashboard.joinAuction")}
-                        </Button>
-                      </Link>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-                <Link href="/leagues">
-                  <Button variant="outline" className="w-full">
-                    {t("dashboard.viewAllAuctions")}
-                  </Button>
-                </Link>
+                <div className="mt-auto">
+                  <Link href="/leagues">
+                    <Button variant="outline" className="w-full">
+                      {t("dashboard.viewAllAuctions")}
+                    </Button>
+                  </Link>
+                </div>
               </>
             )}
           </CardContent>

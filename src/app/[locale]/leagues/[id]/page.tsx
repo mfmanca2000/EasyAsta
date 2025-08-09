@@ -9,6 +9,7 @@ import { TeamWithPlayers } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CopyableCode } from "@/components/ui/copyable-code";
 import { Users, Trophy, Crown, UserCheck, FileText, Gavel, Bot } from "lucide-react";
 import { Link, redirect } from "@/i18n/navigation";
 import { LeagueDetailSkeleton } from "@/components/ui/league-detail-skeleton";
@@ -262,7 +263,7 @@ export default function LeagueDetailPage() {
               <div className="font-medium">{t("leagues.details.shareId")}</div>
               <div className="text-sm text-muted-foreground">{t("leagues.details.shareIdDescription")}</div>
             </div>
-            <div className="font-mono text-lg bg-muted px-3 py-1 rounded">{league.joinCode}</div>
+            <CopyableCode text={league.joinCode} className="text-lg" />
           </div>
         </CardContent>
       </Card>

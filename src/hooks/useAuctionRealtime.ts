@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useSocketIO } from "./useSocketIO";
 import {
   AuctionRound,
@@ -82,25 +82,58 @@ export function useAuctionRealtime({
 
   const { socket, isConnected, on, off } = useSocketIO({ leagueId, userId, userName, enabled: !!leagueId });
 
-  // Fetch latest auction state
-  const refreshAuctionState = useCallback(async () => {
-    if (isSyncing || !leagueId) return; // Avoid concurrent refreshes and calls without leagueId
+  // Debounced state refresh to prevent excessive API calls
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const refreshAuctionState = useCallback(async (immediate = false) => {
+    if (isSyncing || !leagueId) return;
+
+    // Clear existing timeout if immediate refresh requested
+    if (immediate && refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+      refreshTimeoutRef.current = null;
+    }
+
+    // If not immediate, debounce the refresh
+    if (!immediate) {
+      if (refreshTimeoutRef.current) return; // Already scheduled
+      
+      refreshTimeoutRef.current = setTimeout(() => {
+        refreshTimeoutRef.current = null;
+        refreshAuctionState(true);
+      }, 150); // 150ms debounce
+      return;
+    }
 
     try {
       setIsSyncing(true);
-      const response = await fetch(`/api/auction?leagueId=${leagueId}`);
-      const data = await response.json();
+      
+      // Use AbortController for request cancellation
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+      const response = await fetch(`/api/auction?leagueId=${leagueId}`, {
+        signal: controller.signal,
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
+      
+      clearTimeout(timeoutId);
 
       if (response.ok) {
+        const data = await response.json();
         setAuctionState(data);
         setLastUpdated(new Date());
       }
     } catch (error) {
-      console.error("Error refreshing auction state:", error);
+      if (error instanceof Error && error.name !== 'AbortError') {
+        console.error("Error refreshing auction state:", error);
+      }
     } finally {
       setIsSyncing(false);
     }
-  }, [leagueId, isSyncing]); // Remove isSyncing dependency to prevent recreation
+  }, [leagueId, isSyncing]);
 
   // Socket event handlers
   useEffect(() => {
@@ -108,10 +141,10 @@ export function useAuctionRealtime({
 
     // Player selection event
     const handlePlayerSelected = (data: PlayerSelectedSocketEvent) => {
-      console.log("[CLIENT] Player selected received:", data);
-      console.log("[CLIENT] Calling refreshAuctionState...");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("[CLIENT] Player selected:", data.selection.user.name);
+      }
       refreshAuctionState();
-      console.log("[CLIENT] Calling onPlayerSelected callback...");
 
       // Convert to PlayerSelectedEvent format for callback
       const playerSelectedEvent: PlayerSelectedEvent = {

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { CopyableCode } from "@/components/ui/copyable-code";
 import { Plus, Users, Trophy, Trash2 } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { LeaguesPageSkeleton } from "@/components/ui/league-skeleton";
@@ -441,8 +442,9 @@ export default function LeaguesPage() {
                 </div>
 
                 <div className="mt-3 text-xs text-muted-foreground">
-                  {t("leagues.joinCode")}: <span className="font-mono font-semibold">{league.joinCode}</span>
+                  {t("leagues.joinCode")}:
                 </div>
+                <CopyableCode text={league.joinCode} className="text-xs mt-1" iconSize={12} />
               </CardContent>
             </Card>
           );
