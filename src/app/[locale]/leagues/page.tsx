@@ -361,7 +361,7 @@ export default function LeaguesPage() {
                 <Input
                   id="leagueId"
                   value={joinFormData.leagueId}
-                  onChange={(e) => setJoinFormData((prev) => ({ ...prev, leagueId: e.target.value }))}
+                  onChange={(e) => setJoinFormData((prev) => ({ ...prev, leagueId: e.target.value.toUpperCase() }))}
                   placeholder={t("leagues.leagueIdPlaceholder")}
                   required
                 />
