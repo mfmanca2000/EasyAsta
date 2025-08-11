@@ -1,0 +1,72 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+jest.config.js
+
+# Next.js
+.next/
+out/
+build
+
+# Environment variables
+.env*.local
+.env.example
+
+# IDE files
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!README.md
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+
+# TypeScript cache
+*.tsbuildinfo
+
+# ESLint cache
+.eslintcache
+
+# Development files
+DDevEasyAstamessages/
+E2E_TEST_REPORT.md
+
+# Test files
+src/**/*.test.ts
+src/**/*.test.tsx
+src/**/__tests__/
+
+# Excel files (sample data)
+*.xlsx
+
+# Scripts
+scripts/
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore

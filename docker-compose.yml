@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: easyasta-postgres
+    environment:
+      POSTGRES_DB: easyasta
+      POSTGRES_USER: easyasta_user
+      POSTGRES_PASSWORD: easyasta_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - easyasta-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U easyasta_user -d easyasta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # EasyAsta Application
+  app:
+    build: .
+    container_name: easyasta-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://easyasta_user:easyasta_password@postgres:5432/easyasta?schema=public
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-secret-key-change-in-production
+      - GOOGLE_CLIENT_ID=your-google-client-id
+      - GOOGLE_CLIENT_SECRET=your-google-client-secret
+    ports:
+      - "3000:3000"
+    networks:
+      - easyasta-network
+    volumes:
+      # Mount logs directory for debugging
+      - app_logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis (optional - for session storage and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: easyasta-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - easyasta-network
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  app_logs:
+    driver: local
+
+networks:
+  easyasta-network:
+    driver: bridge
