@@ -110,8 +110,31 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    await prisma.$transaction(async (tx) => {
+    // Handle bot users outside transaction first
+    if (isEnabled) {
+      // Rimuovi eventuali bot esistenti
+      await removeBotUsers(leagueId)
+      
+      // Crea nuovi bot
+      const botUserIds = await createBotUsers(leagueId, botCount)
+      
+      // Aggiorna crediti bot basandosi sui crediti della lega
+      await prisma.team.updateMany({
+        where: {
+          leagueId,
+          userId: { in: botUserIds }
+        },
+        data: {
+          remainingCredits: league.credits
+        }
+      })
+    } else {
+      // Disabilita bot - rimuovi tutti
+      await removeBotUsers(leagueId)
+    }
 
+    // Then handle configuration and audit in a quick transaction
+    await prisma.$transaction(async (tx) => {
       // Upsert configurazione bot
       await tx.botConfig.upsert({
         where: { leagueId },
@@ -129,28 +152,6 @@ export async function POST(request: NextRequest) {
           intelligence
         }
       })
-
-      if (isEnabled) {
-        // Rimuovi eventuali bot esistenti
-        await removeBotUsers(leagueId)
-        
-        // Crea nuovi bot
-        const botUserIds = await createBotUsers(leagueId, botCount)
-        
-        // Aggiorna crediti bot basandosi sui crediti della lega
-        await tx.team.updateMany({
-          where: {
-            leagueId,
-            userId: { in: botUserIds }
-          },
-          data: {
-            remainingCredits: league.credits
-          }
-        })
-      } else {
-        // Disabilita bot - rimuovi tutti
-        await removeBotUsers(leagueId)
-      }
 
       // Log dell'azione admin
       await tx.adminAction.create({
@@ -277,9 +278,11 @@ export async function DELETE(request: NextRequest) {
       }
     })
 
-    await prisma.$transaction(async (tx) => {
-      await removeBotUsers(leagueId)
+    // Remove bot users first (outside transaction)
+    await removeBotUsers(leagueId)
 
+    // Then handle configuration and audit in a quick transaction
+    await prisma.$transaction(async (tx) => {
       // Disabilita configurazione bot
       await tx.botConfig.upsert({
         where: { leagueId },
