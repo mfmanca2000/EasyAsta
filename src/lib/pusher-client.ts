@@ -121,10 +121,8 @@ export const getPusherInstance = (): Pusher => {
       notifyListeners();
     });
 
-    // Enable Pusher logging in development
-    if (process.env.NODE_ENV === 'development') {
-      Pusher.logToConsole = true;
-    }
+    // Disable Pusher's built-in verbose logging
+    Pusher.logToConsole = false;
   }
 
   return pusherInstance;

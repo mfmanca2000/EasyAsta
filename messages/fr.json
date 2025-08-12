@@ -161,7 +161,7 @@
       "completed": "Terminée"
     },
     "deleteConfirmTitle": "Confirmer la Suppression",
-    "deleteConfirmDescription": "Êtes-vous sûr de vouloir supprimer la ligue '{name}'? Cette action ne peut pas être annulée et toutes les données associées seront perdues.",
+    "deleteConfirmDescription": "Êtes-vous sûr de vouloir supprimer la ligue \"{name}\"? Cette action ne peut pas être annulée et toutes les données associées seront perdues.",
     "deleteSuccess": "Ligue supprimée avec succès",
     "deleting": "Suppression...",
     "details": {

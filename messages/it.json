@@ -161,7 +161,7 @@
       "completed": "Completata"
     },
     "deleteConfirmTitle": "Conferma Eliminazione",
-    "deleteConfirmDescription": "Sei sicuro di voler eliminare la lega '{name}'? Questa azione non può essere annullata e tutti i dati associati verranno persi.",
+    "deleteConfirmDescription": "Sei sicuro di voler eliminare la lega \"{name}\"? Questa azione non può essere annullata e tutti i dati associati verranno persi.",
     "deleteSuccess": "Lega eliminata con successo",
     "deleting": "Eliminazione...",
     "details": {

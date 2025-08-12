@@ -451,7 +451,7 @@ export default function LeaguesPage() {
           <Card className="w-full max-w-md">
             <CardHeader>
               <CardTitle>{t("leagues.deleteConfirmTitle")}</CardTitle>
-              <CardDescription>{t("leagues.deleteConfirmDescription", { name: deleteConfirm.league.name })}</CardDescription>
+              <CardDescription>{t("leagues.deleteConfirmDescription", { name: deleteConfirm.league?.name || "Unknown League" })}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2 justify-end">

@@ -50,8 +50,6 @@ export function usePlayersImport({ leagueId, onImportSuccess }: UsePlayersImport
         onImportSuccess?.();
       }
 
-      console.log("FATTO!!!");
-
       return result;
     } catch (error) {
       console.error("Import error:", error);
