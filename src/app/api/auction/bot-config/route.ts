@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createBotUsers, removeBotUsers } from '@/lib/bot-logic'
-import pusher, { triggerLeaguesEvent } from '@/lib/pusher'
+import { triggerLeaguesEvent } from '@/lib/pusher'
 
 // GET - Ottieni configurazione bot per lega
 export async function GET(request: NextRequest) {

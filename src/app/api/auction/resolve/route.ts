@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { resolveRound } from '@/lib/auction'
-import pusher, { triggerAuctionEvent } from '@/lib/pusher'
+import { triggerAuctionEvent } from '@/lib/pusher'
 import { z } from 'zod'
 
 const resolveRoundSchema = z.object({

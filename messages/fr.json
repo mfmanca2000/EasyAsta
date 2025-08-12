@@ -518,6 +518,35 @@
       "resetSuccess": "Enchère réinitialisée avec succès ! La page va être rechargée.",
       "resetError": "Erreur lors de la réinitialisation de l'enchère",
       "resetWarning": "⚠️ Cette action supprimera toutes les données de l'enchère et ne peut pas être annulée"      
+    },
+    "connection": {
+      "title": "État de la Connexion",
+      "refresh": "Actualiser",
+      "realtime": {
+        "connected": "Connecté",
+        "connecting": "Connexion...",
+        "connectedDescription": "Connecté à Pusher pour les mises à jour en temps réel",
+        "connectingDescription": "Tentative de connexion aux services temps réel..."
+      },
+      "fallback": {
+        "polling": "Mode Polling",
+        "quota": "Limite Atteinte",
+        "pollingDescription": "Utilisation du polling pour les mises à jour (actualisation toutes les 2 secondes)",
+        "quotaDescription": "Limite quotidienne Pusher atteinte, utilisation automatique du polling"
+      },
+      "polling": {
+        "active": "Polling Actif"
+      },
+      "testing": {
+        "title": "Contrôles de Test (Développement)",
+        "enableFallback": "Test Fallback",
+        "reconnect": "Reconnecter"
+      },
+      "stats": {
+        "title": "Statistiques de Connexion",
+        "attempts": "Tentatives de reconnexion",
+        "lastError": "Dernière erreur"
+      }
     }
   },
   "errors": {

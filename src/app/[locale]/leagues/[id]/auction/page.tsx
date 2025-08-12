@@ -60,8 +60,6 @@ export default function AuctionPage() {
   // Use real-time auction hook instead of polling
   const { auctionState, connectedUsers, isConnected, isSyncing, refreshAuctionState } = useAuctionPusher({
     leagueId,
-    userId: session?.user?.id || undefined,
-    userName: session?.user?.name || session?.user?.email || undefined,
     onPlayerSelected: (data) => {
       const { selection } = data;
       // Only show player name if it's the current user who selected

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import pusher, { triggerLeaguesEvent } from "@/lib/pusher";
+import { triggerLeaguesEvent } from "@/lib/pusher";
 import { z } from "zod";
 
 const joinLeagueSchema = z.object({

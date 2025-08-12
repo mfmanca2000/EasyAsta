@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { Channel } from "pusher-js";
-import { getPusherInstance } from "@/lib/pusher-client";
+import { 
+  getPusherInstance, 
+  addConnectionListener, 
+  removeConnectionListener, 
+  getConnectionStatus,
+  type PusherConnectionStatus 
+} from "@/lib/pusher-client";
 import { getAuctionChannel, PUSHER_EVENTS } from "@/lib/pusher";
+import { usePollingFallback } from "./usePollingFallback";
 import {
   AuctionRound,
   Player,
@@ -37,8 +44,6 @@ interface AuctionState {
 
 interface UseAuctionPusherProps {
   leagueId: string;
-  userId?: string;
-  userName?: string;
   initialState?: AuctionState | null;
   onPlayerSelected?: (data: PlayerSelectedEvent) => void;
   onAdminPlayerSelected?: (data: AdminPlayerSelectedData) => void;
@@ -57,8 +62,6 @@ interface UseAuctionPusherProps {
 
 export function useAuctionPusher({
   leagueId,
-  userId,
-  userName,
   initialState = null,
   onPlayerSelected,
   onAdminPlayerSelected,
@@ -78,10 +81,23 @@ export function useAuctionPusher({
   const [connectedUsers, setConnectedUsers] = useState<Array<{ id: string; name: string }>>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<PusherConnectionStatus>(getConnectionStatus());
 
   const pusherRef = useRef(getPusherInstance());
   const channelRef = useRef<Channel | null>(null);
+
+  // Polling fallback hook
+  const pollingFallback = usePollingFallback({
+    leagueId,
+    initialState,
+    enabled: connectionStatus.fallbackMode, // Use polling when fallback is needed
+    onPlayerSelected,
+    onAdminPlayerSelected,
+    onRoundResolved,
+    onAuctionStarted,
+    onNextRoundStarted,
+    onRoundReadyForResolution,
+  });
 
   // Debounced state refresh to prevent excessive API calls
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -136,30 +152,39 @@ export function useAuctionPusher({
     }
   }, [leagueId, isSyncing]);
 
-  // Setup Pusher connection and event listeners
+  // Listen for connection status changes
   useEffect(() => {
-    if (!leagueId || !pusherRef.current) return;
+    const handleConnectionStatusChange = (status: PusherConnectionStatus) => {
+      console.log('[PUSHER] Connection status changed:', status);
+      setConnectionStatus(status);
+      
+      // Show user-friendly notifications about fallback mode
+      if (status.fallbackMode && !connectionStatus.fallbackMode) {
+        if (status.isLimitReached) {
+          console.warn('[FALLBACK] Switching to polling mode due to Pusher quota limits');
+        } else {
+          console.warn('[FALLBACK] Switching to polling mode due to connection issues');
+        }
+      } else if (!status.fallbackMode && connectionStatus.fallbackMode) {
+        console.log('[FALLBACK] Reconnected to Pusher, switching back from polling mode');
+      }
+    };
+
+    addConnectionListener(handleConnectionStatusChange);
+    
+    return () => {
+      removeConnectionListener(handleConnectionStatusChange);
+    };
+  }, [connectionStatus.fallbackMode]);
+
+  // Setup Pusher connection and event listeners (only when not in fallback mode)
+  useEffect(() => {
+    if (!leagueId || !pusherRef.current || connectionStatus.fallbackMode) return;
 
     const pusher = pusherRef.current;
     const channelName = getAuctionChannel(leagueId);
     const channel = pusher.subscribe(channelName);
     channelRef.current = channel;
-
-    // Connection state handlers
-    pusher.connection.bind('connected', () => {
-      console.log('[PUSHER] Connected');
-      setIsConnected(true);
-    });
-
-    pusher.connection.bind('disconnected', () => {
-      console.log('[PUSHER] Disconnected');
-      setIsConnected(false);
-    });
-
-    pusher.connection.bind('error', (error: any) => {
-      console.error('[PUSHER] Connection error:', error);
-      setIsConnected(false);
-    });
 
     // Player selection event
     const handlePlayerSelected = (data: PlayerSelectedSocketEvent) => {
@@ -373,6 +398,7 @@ export function useAuctionPusher({
     };
   }, [
     leagueId,
+    connectionStatus.fallbackMode,
     refreshAuctionState,
     onPlayerSelected,
     onAdminPlayerSelected,
@@ -389,37 +415,17 @@ export function useAuctionPusher({
     onUserTimeout,
   ]);
 
-  // Initialize state if not provided
+  // Initialize state if not provided (only for Pusher mode)
   useEffect(() => {
-    if (!initialState && leagueId && !auctionState) {
+    if (!initialState && leagueId && !auctionState && !connectionStatus.fallbackMode) {
       refreshAuctionState();
     }
-  }, [leagueId, auctionState, initialState, refreshAuctionState]);
+  }, [leagueId, auctionState, initialState, refreshAuctionState, connectionStatus.fallbackMode]);
 
-  // Fallback polling when Pusher is disconnected
-  useEffect(() => {
-    if (!leagueId) return;
-
-    let heartbeatInterval: NodeJS.Timeout;
-
-    if (!isConnected) {
-      console.log("[PUSHER] Disconnected, falling back to polling");
-      heartbeatInterval = setInterval(() => {
-        refreshAuctionState();
-      }, 5000); // Poll every 5 seconds when disconnected
-    }
-
-    return () => {
-      if (heartbeatInterval) {
-        clearInterval(heartbeatInterval);
-      }
-    };
-  }, [isConnected, leagueId, refreshAuctionState]);
-
-  // Sync when coming back online (page visibility change)
+  // Sync when coming back online (page visibility change) - only for Pusher mode
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && isConnected) {
+      if (!document.hidden && connectionStatus.isConnected && !connectionStatus.fallbackMode) {
         console.log("[PUSHER] Page became visible, syncing auction state");
         refreshAuctionState();
       }
@@ -427,15 +433,36 @@ export function useAuctionPusher({
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isConnected, refreshAuctionState]);
+  }, [connectionStatus.isConnected, connectionStatus.fallbackMode, refreshAuctionState]);
+
+  // Return data from the appropriate source based on connection mode
+  if (connectionStatus.fallbackMode) {
+    return {
+      auctionState: pollingFallback.auctionState,
+      connectedUsers: pollingFallback.connectedUsers,
+      lastUpdated: pollingFallback.lastUpdated,
+      isConnected: pollingFallback.isConnected,
+      isSyncing: pollingFallback.isSyncing || isSyncing,
+      refreshAuctionState: pollingFallback.refreshAuctionState,
+      pusher: pollingFallback.pusher,
+      // Additional fallback info
+      fallbackMode: true,
+      isPolling: pollingFallback.isPolling,
+      connectionStatus,
+    };
+  }
 
   return {
     auctionState,
     connectedUsers,
     lastUpdated,
-    isConnected,
+    isConnected: connectionStatus.isConnected,
     isSyncing,
     refreshAuctionState,
     pusher: pusherRef.current,
+    // Additional connection info
+    fallbackMode: false,
+    isPolling: false,
+    connectionStatus,
   };
 }

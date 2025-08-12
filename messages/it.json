@@ -518,6 +518,35 @@
       "resetSuccess": "Asta resettata con successo! La pagina verrà ricaricata.",
       "resetError": "Errore durante il reset dell'asta",
       "resetWarning": "⚠️ Questa azione eliminerà tutti i dati dell'asta e non può essere annullata"      
+    },
+    "connection": {
+      "title": "Stato Connessione",
+      "refresh": "Aggiorna",
+      "realtime": {
+        "connected": "Connesso",
+        "connecting": "Connessione...",
+        "connectedDescription": "Connesso a Pusher per aggiornamenti in tempo reale",
+        "connectingDescription": "Tentativo di connessione ai servizi real-time..."
+      },
+      "fallback": {
+        "polling": "Modalità Polling",
+        "quota": "Limite Raggiunto",
+        "pollingDescription": "Utilizzo del polling per gli aggiornamenti (aggiornamento ogni 2 secondi)",
+        "quotaDescription": "Limite giornaliero Pusher raggiunto, utilizzo automatico del polling"
+      },
+      "polling": {
+        "active": "Polling Attivo"
+      },
+      "testing": {
+        "title": "Controlli Test (Sviluppo)",
+        "enableFallback": "Test Fallback",
+        "reconnect": "Riconnetti"
+      },
+      "stats": {
+        "title": "Statistiche Connessione",
+        "attempts": "Tentativi riconnessione",
+        "lastError": "Ultimo errore"
+      }
     }
   },
   "errors": {

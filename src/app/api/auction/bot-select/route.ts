@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { calculateBotSelection } from '@/lib/bot-logic'
-import pusher, { triggerAuctionEvent } from '@/lib/pusher'
+import { triggerAuctionEvent } from '@/lib/pusher'
 
 // POST - Esegui selezione automatica per bot
 export async function POST(request: NextRequest) {
