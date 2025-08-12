@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { emitPlayerSelectionPrivacy } from '@/lib/socket-utils'
+import pusher, { triggerAuctionEvent, getAuctionChannel } from '@/lib/pusher'
 import { z } from 'zod'
 
 const selectPlayerSchema = z.object({
@@ -127,35 +127,18 @@ export async function POST(request: NextRequest) {
       })
     ])
 
-    // Emetti evento Socket.io per notificare la selezione
-    const fullData = {
-      selection,
-      leagueId: round.leagueId,
-      roundId
-    }
-    
-    const anonymousData = {
+    // Emetti evento Pusher per notificare la selezione
+    const eventData = {
       selection: {
         id: selection.id,
-        roundId: selection.roundId,
-        userId: selection.userId,
-        playerId: selection.playerId,
-        isWinner: selection.isWinner,
-        createdAt: selection.createdAt,
         user: selection.user,
-        player: null // Hide player details for other users
+        player: selection.player
       },
       leagueId: round.leagueId,
       roundId
     }
     
-    emitPlayerSelectionPrivacy(
-      round.leagueId, 
-      userTeam.userId, 
-      'player-selected',
-      fullData,
-      anonymousData
-    )
+    await triggerAuctionEvent(round.leagueId, 'PLAYER_SELECTED', eventData)
 
     // Controlla se tutti hanno selezionato
     const allSelections = await prisma.playerSelection.findMany({
@@ -173,15 +156,12 @@ export async function POST(request: NextRequest) {
         data: { status: 'RESOLUTION' }
       })
 
-      // Emetti evento Socket.io per notificare che il turno è pronto per risoluzione
-      const io = (globalThis as any).io;
-      if (io) {
-        io.to(`auction-${round.leagueId}`).emit('round-ready-for-resolution', {
-          leagueId: round.leagueId,
-          roundId,
-          message: 'Turno completato, pronto per risoluzione'
-        })
-      }
+      // Emetti evento Pusher per notificare che il turno è pronto per risoluzione
+      await triggerAuctionEvent(round.leagueId, 'ROUND_READY_FOR_RESOLUTION', {
+        leagueId: round.leagueId,
+        roundId,
+        message: 'Turno completato, pronto per risoluzione'
+      })
 
       return NextResponse.json({
         selection,

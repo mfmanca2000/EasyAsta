@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { emitToLeaguesRoom } from "@/lib/socket-utils";
+import pusher, { triggerLeaguesEvent } from "@/lib/pusher";
 import { z } from "zod";
 
 const joinLeagueSchema = z.object({
@@ -131,8 +131,8 @@ export async function POST(request: NextRequest) {
 
     // Emit Socket.io events to notify users about the new team
     if (updatedLeague) {
-      // Emit to the general leagues room for all users viewing leagues page
-      emitToLeaguesRoom('team-joined', {
+      // Emit Pusher events to notify users about the new team
+      await triggerLeaguesEvent('TEAM_JOINED', {
         leagueId: league.id,
         teamName: teamName,
         userName: user.name || user.email || 'Unknown User',
@@ -140,7 +140,7 @@ export async function POST(request: NextRequest) {
       });
 
       // Also emit a general league update event
-      emitToLeaguesRoom('league-updated', {
+      await triggerLeaguesEvent('LEAGUE_UPDATED', {
         leagueId: league.id,
         teamCount: updatedLeague._count.teams
       });

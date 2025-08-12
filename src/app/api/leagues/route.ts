@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateLeagueJoinCode } from "@/lib/utils";
-import { emitToLeaguesRoom } from "@/lib/socket-utils";
+import pusher, { triggerLeaguesEvent } from "@/lib/pusher";
 import { z } from "zod";
 
 const createLeagueSchema = z.object({
@@ -83,8 +83,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Emit Socket.io event to notify users about the new league
-    emitToLeaguesRoom('league-created', {
+    // Emit Pusher event to notify users about the new league
+    await triggerLeaguesEvent('LEAGUE_CREATED', {
       leagueId: league.id,
       leagueName: league.name,
       adminName: league.admin.name || league.admin.email || 'Unknown Admin',

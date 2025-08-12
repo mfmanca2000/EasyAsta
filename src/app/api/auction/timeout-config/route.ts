@@ -2,14 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import pusher, { triggerAuctionEvent } from '@/lib/pusher'
 import { z } from 'zod'
-
-// Get global Socket.io instance
-interface GlobalSocket {
-  io?: import('socket.io').Server
-}
-
-declare const globalThis: GlobalSocket & typeof global
 
 const timeoutConfigSchema = z.object({
   leagueId: z.string().cuid(),
@@ -85,16 +79,15 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Emetti evento Socket.io per notificare il cambio configurazione
-    if (globalThis.io) {
-      globalThis.io.to(`auction-${leagueId}`).emit('timeout-config-updated', {
-        leagueId,
-        timeoutSeconds,
-        autoSelectOnTimeout,
-        pauseOnDisconnect,
-        adminName: session.user.name || session.user.email
-      })
-    }
+    // Emetti evento Pusher per notificare il cambio configurazione
+    await triggerAuctionEvent(leagueId, 'ADMIN_ACTION', {
+      leagueId,
+      timeoutSeconds,
+      autoSelectOnTimeout,
+      pauseOnDisconnect,
+      adminName: session.user.name || session.user.email,
+      action: 'timeout-config-updated'
+    })
 
     return NextResponse.json({
       config,

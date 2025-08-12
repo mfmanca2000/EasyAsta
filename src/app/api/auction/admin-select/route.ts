@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { emitToAuctionRoom, emitToUser } from '@/lib/socket-utils'
+import pusher, { triggerAuctionEvent } from '@/lib/pusher'
 import { z } from 'zod'
 
 const adminSelectSchema = z.object({
@@ -147,10 +147,13 @@ export async function POST(request: NextRequest) {
       return selection
     })
 
-    // Emitti eventi Socket.io per notificare la selezione admin
-    // Send full admin details to the admin and the target user
+    // Emetti eventi Pusher per notificare la selezione admin
     const adminEvent = {
-      selection: result,
+      selection: {
+        id: result.id,
+        user: result.user,
+        player: result.player
+      },
       leagueId: round.leagueId,
       roundId,
       isAdminAction: true,
@@ -162,39 +165,15 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Send full details to admin (session.user.id) and target user (targetTeam.userId)
-    emitToUser(session.user!.id!, 'admin-player-selected', adminEvent)
-    emitToUser(targetTeam.userId, 'admin-player-selected', adminEvent)
+    // Trigger admin player selected event
+    await triggerAuctionEvent(round.leagueId, 'ADMIN_PLAYER_SELECTED', adminEvent)
     
-    // Send anonymous admin selection to other users
-    emitToAuctionRoom(round.leagueId, 'admin-player-selected', {
+    // Also trigger regular player selected event
+    await triggerAuctionEvent(round.leagueId, 'PLAYER_SELECTED', {
       selection: {
-        ...result,
-        player: null // Hide player details for other users
-      },
-      leagueId: round.leagueId,
-      roundId,
-      isAdminAction: true,
-      adminReason: 'Selezione effettuata dall\'admin',
-      targetTeam: {
-        id: targetTeam.id,
-        name: targetTeam.name,
-        userName: targetTeam.user.name
-      }
-    })
-    
-    // Also emit the regular player-selected event with privacy
-    emitToUser(targetTeam.userId, 'player-selected', {
-      selection: result,
-      leagueId: round.leagueId,
-      roundId
-    })
-    
-    // Send anonymous player-selected to others
-    emitToAuctionRoom(round.leagueId, 'player-selected', {
-      selection: {
-        ...result,
-        player: null // Hide player details for other users
+        id: result.id,
+        user: result.user,
+        player: result.player
       },
       leagueId: round.leagueId,
       roundId
@@ -216,8 +195,8 @@ export async function POST(request: NextRequest) {
         data: { status: 'RESOLUTION' }
       })
 
-      // Emetti evento Socket.io per notificare che il turno è pronto per risoluzione
-      emitToAuctionRoom(round.leagueId, 'round-ready-for-resolution', {
+      // Emetti evento Pusher per notificare che il turno è pronto per risoluzione
+      await triggerAuctionEvent(round.leagueId, 'ROUND_READY_FOR_RESOLUTION', {
         leagueId: round.leagueId,
         roundId,
         message: 'Turno completato con selezione admin, pronto per risoluzione'

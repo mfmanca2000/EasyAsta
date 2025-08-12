@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useTranslations } from "next-intl";
-import { useAuctionRealtime } from "@/hooks/useAuctionRealtime";
+import { useAuctionPusher } from "@/hooks/useAuctionPusher";
 import { useToast } from "@/components/ui/toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -58,21 +58,16 @@ export default function AuctionPage() {
   } = useAuctionActions({ leagueId, refreshAuctionState: async () => {} });
 
   // Use real-time auction hook instead of polling
-  const { auctionState, connectedUsers, isConnected, isSyncing, refreshAuctionState } = useAuctionRealtime({
+  const { auctionState, connectedUsers, isConnected, isSyncing, refreshAuctionState } = useAuctionPusher({
     leagueId,
     userId: session?.user?.id || undefined,
     userName: session?.user?.name || session?.user?.email || undefined,
     onPlayerSelected: (data) => {
       const { selection } = data;
-      // If player is null, it means we should show a generic message (privacy mode)
-      if (!selection.player) {
-        addToast({
-          type: "info",
-          title: t("auction.playerSelectedToast"),
-          description: t("auction.teamSelectedPlayer", { teamName: selection.user?.name || "A user" }),
-          duration: 3000,
-        });
-      } else {
+      // Only show player name if it's the current user who selected
+      const isCurrentUser = selection.user?.id === session?.user?.id;
+      
+      if (isCurrentUser) {
         // Show full details for the selecting user
         addToast({
           type: "info",
@@ -80,24 +75,35 @@ export default function AuctionPage() {
           description: `${selection.user?.name} → ${selection.player?.name}`,
           duration: 3000,
         });
+      } else {
+        // Show generic message for other users (privacy mode)
+        addToast({
+          type: "info",
+          title: t("auction.playerSelectedToast"),
+          description: t("auction.teamSelectedPlayer", { teamName: selection.user?.name || "A user" }),
+          duration: 3000,
+        });
       }
     },
     onAdminPlayerSelected: (data) => {
       const { selection, targetTeam } = data;
-      // If player is null, it means we should show a generic message (privacy mode)
-      if (!selection.player) {
-        addToast({
-          type: "info",
-          title: t("auction.adminPlayerSelectedToast"),
-          description: t("auction.adminSelectedForTeam", { teamName: targetTeam.name }),
-          duration: 4000,
-        });
-      } else {
-        // Show full details for admin and target user
+      // Only show player name if it's for the current user's team
+      const isCurrentUserTeam = selection.user?.id === session?.user?.id;
+      
+      if (isCurrentUserTeam) {
+        // Show full details when it's for the current user's team
         addToast({
           type: "info",
           title: t("auction.adminPlayerSelectedToast"),
           description: `Admin → ${selection.player?.name} per ${targetTeam.name}`,
+          duration: 4000,
+        });
+      } else {
+        // Show generic message for other teams (privacy mode)
+        addToast({
+          type: "info",
+          title: t("auction.adminPlayerSelectedToast"),
+          description: t("auction.adminSelectedForTeam", { teamName: targetTeam.name }),
           duration: 4000,
         });
       }

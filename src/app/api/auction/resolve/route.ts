@@ -3,14 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { resolveRound } from '@/lib/auction'
+import pusher, { triggerAuctionEvent } from '@/lib/pusher'
 import { z } from 'zod'
-
-// Get global Socket.io instance
-interface GlobalSocket {
-  io?: import('socket.io').Server
-}
-
-declare const globalThis: GlobalSocket & typeof global
 
 const resolveRoundSchema = z.object({
   roundId: z.string().cuid(),
@@ -75,10 +69,9 @@ export async function POST(request: NextRequest) {
 
     const result = await resolveRound(roundId)
     
-    // Emetti eventi Socket.io appropriati
-    if (globalThis.io) {
-      // Se ci sono conflitti, emetti evento per mostrare il modal
-      if (result.conflicts && result.conflicts.length > 0) {
+    // Emetti eventi Pusher appropriati
+    // Se ci sono conflitti, emetti evento per mostrare il modal
+    if (result.conflicts && result.conflicts.length > 0) {
         // Transform conflicts to the format expected by ConflictResolutionModal
         const transformedConflicts = result.conflicts.map(conflict => {
           const winner = conflict.conflicts.find(c => c.isWinner);
@@ -110,7 +103,7 @@ export async function POST(request: NextRequest) {
           };
         });
 
-        globalThis.io.to(`auction-${round.league.id}`).emit('conflict-resolution', {
+        await triggerAuctionEvent(round.league.id, 'CONFLICT_RESOLUTION', {
           leagueId: round.league.id,
           roundId,
           conflicts: transformedConflicts,
@@ -121,7 +114,7 @@ export async function POST(request: NextRequest) {
 
       // Se il turno continua, emetti evento apposito
       if (result.roundContinues) {
-        globalThis.io.to(`auction-${round.league.id}`).emit('round-continues', {
+        await triggerAuctionEvent(round.league.id, 'ROUND_CONTINUES', {
           leagueId: round.league.id,
           roundId,
           teamsWithoutAssignments: result.teamsWithoutAssignments,
@@ -129,7 +122,7 @@ export async function POST(request: NextRequest) {
         })
       } else {
         // Turno completato normalmente
-        globalThis.io.to(`auction-${round.league.id}`).emit('round-resolved', {
+        await triggerAuctionEvent(round.league.id, 'ROUND_RESOLVED', {
           leagueId: round.league.id,
           roundId,
           result,
@@ -137,7 +130,6 @@ export async function POST(request: NextRequest) {
           canContinue: result.canContinue
         })
       }
-    }
     
     return NextResponse.json(result)
 

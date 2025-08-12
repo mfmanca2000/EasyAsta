@@ -2,15 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import pusher, { triggerAuctionEvent } from '@/lib/pusher'
 import { z } from 'zod'
-
-// Get global Socket.io instance
-interface GlobalSocket {
-  io?: import('socket.io').Server
-}
-
-declare const globalThis: GlobalSocket & typeof global
-declare const global: GlobalSocket
 
 const adminOverrideSchema = z.object({
   roundId: z.string().cuid(),
@@ -254,32 +247,30 @@ export async function POST(request: NextRequest) {
         break
     }
 
-    // Emetti evento Socket.io per notificare l'override admin
-    const io = globalThis.io || global.io
-    if (io) {
-      io.to(`auction-${round.leagueId}`).emit('admin-override', {
-        leagueId: round.leagueId,
-        roundId,
-        action,
-        result,
-        reason,
-        adminName: session.user.name || session.user.email
-      })
+    // Emetti evento Pusher per notificare l'override admin
+    await triggerAuctionEvent(round.leagueId, 'ADMIN_OVERRIDE', {
+      leagueId: round.leagueId,
+      roundId,
+      action,
+      result,
+      reason,
+      adminName: session.user.name || session.user.email
+    })
 
-      // Se abbiamo annullato una selezione e il round è tornato a SELECTION, emetti anche round-back-to-selection
-      if (action === 'cancel-selection') {
-        const updatedRound = await prisma.auctionRound.findFirst({
-          where: { id: roundId },
-          select: { status: true }
+    // Se abbiamo annullato una selezione e il round è tornato a SELECTION, emetti evento aggiuntivo
+    if (action === 'cancel-selection') {
+      const updatedRound = await prisma.auctionRound.findFirst({
+        where: { id: roundId },
+        select: { status: true }
+      })
+      
+      if (updatedRound?.status === 'SELECTION') {
+        await triggerAuctionEvent(round.leagueId, 'AUCTION_STATE_UPDATE', {
+          leagueId: round.leagueId,
+          roundId,
+          status: 'SELECTION',
+          message: 'Round tornato in fase di selezione dopo annullamento'
         })
-        
-        if (updatedRound?.status === 'SELECTION') {
-          io.to(`auction-${round.leagueId}`).emit('round-back-to-selection', {
-            leagueId: round.leagueId,
-            roundId,
-            message: 'Round tornato in fase di selezione dopo annullamento'
-          })
-        }
       }
     }
 

@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLeague } from "@/hooks/useLeague";
-import { useSocketIO } from "@/hooks/useSocketIO";
+import { usePusherListener } from "@/hooks/usePusherListener";
 import { TeamWithPlayers } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,11 +25,14 @@ export default function RosterPage() {
   const locale = params.locale as string;
   const t = useTranslations();
   const { league, userTeam, loading, fetchLeague } = useLeague(leagueId);
-  const { socket } = useSocketIO({ 
+  usePusherListener({
     leagueId,
-    userId: session?.user?.email || undefined,
-    userName: session?.user?.name || undefined,
-    enabled: !!leagueId && status === "authenticated"
+    enabled: !!leagueId && status === "authenticated",
+    onPlayerSelected: fetchLeague,
+    onRoundResolved: fetchLeague,
+    onAuctionStateUpdate: fetchLeague,
+    onAdminPlayerSelected: fetchLeague,
+    onNextRoundStarted: fetchLeague,
   });
   const [selectedTeam, setSelectedTeam] = useState<TeamWithPlayers | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -66,36 +69,7 @@ export default function RosterPage() {
     }
   }, [league, selectedTeam]);
 
-  // Socket.io listener per aggiornamenti real-time dell'asta
-  useEffect(() => {
-    if (!socket || !leagueId) return;
-
-    const handlePlayerSelected = () => {
-      // Aggiorna i dati della lega quando viene selezionato un calciatore
-      fetchLeague();
-    };
-
-    const handleRoundResolved = () => {
-      // Aggiorna i dati della lega quando viene risolto un turno
-      fetchLeague();
-    };
-
-    const handleAuctionStateUpdate = () => {
-      // Aggiorna i dati della lega per qualsiasi cambio di stato
-      fetchLeague();
-    };
-
-    // Ascolta gli eventi Socket.io
-    socket.on("player-selected", handlePlayerSelected);
-    socket.on("round-resolved", handleRoundResolved);
-    socket.on("auction-state-update", handleAuctionStateUpdate);
-
-    return () => {
-      socket.off("player-selected", handlePlayerSelected);
-      socket.off("round-resolved", handleRoundResolved);
-      socket.off("auction-state-update", handleAuctionStateUpdate);
-    };
-  }, [socket, leagueId, fetchLeague]);
+  // Real-time updates are now handled by usePusherListener hook
 
   const isAdmin = league?.admin?.email === session?.user?.email;
 

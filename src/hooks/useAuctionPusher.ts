@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState, useRef } from "react";
-import { useSocketIO } from "./useSocketIO";
+import { Channel } from "pusher-js";
+import { getPusherInstance } from "@/lib/pusher-client";
+import { getAuctionChannel, PUSHER_EVENTS } from "@/lib/pusher";
 import {
   AuctionRound,
   Player,
@@ -10,7 +12,6 @@ import {
   RoundResolvedEvent,
   AuctionStateUpdateEvent,
   NextRoundStartedEvent,
-  SOCKET_EVENTS,
   PlayerSelectedSocketEvent,
   RoundResolvedSocketEvent,
   AdminPlayerSocketData,
@@ -34,9 +35,7 @@ interface AuctionState {
   hasActiveRound: boolean;
 }
 
-// All socket event interfaces are now centralized in @/types
-
-interface UseAuctionRealtimeProps {
+interface UseAuctionPusherProps {
   leagueId: string;
   userId?: string;
   userName?: string;
@@ -56,7 +55,7 @@ interface UseAuctionRealtimeProps {
   onUserTimeout?: (user: { id: string; name: string }) => void;
 }
 
-export function useAuctionRealtime({
+export function useAuctionPusher({
   leagueId,
   userId,
   userName,
@@ -74,13 +73,15 @@ export function useAuctionRealtime({
   onUserLeft,
   onUserDisconnected,
   onUserTimeout,
-}: UseAuctionRealtimeProps) {
+}: UseAuctionPusherProps) {
   const [auctionState, setAuctionState] = useState<AuctionState | null>(initialState);
   const [connectedUsers, setConnectedUsers] = useState<Array<{ id: string; name: string }>>([]);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
 
-  const { socket, isConnected, on, off } = useSocketIO({ leagueId, userId, userName, enabled: !!leagueId });
+  const pusherRef = useRef(getPusherInstance());
+  const channelRef = useRef<Channel | null>(null);
 
   // Debounced state refresh to prevent excessive API calls
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -135,14 +136,35 @@ export function useAuctionRealtime({
     }
   }, [leagueId, isSyncing]);
 
-  // Socket event handlers
+  // Setup Pusher connection and event listeners
   useEffect(() => {
-    if (!socket || !isConnected) return;
+    if (!leagueId || !pusherRef.current) return;
+
+    const pusher = pusherRef.current;
+    const channelName = getAuctionChannel(leagueId);
+    const channel = pusher.subscribe(channelName);
+    channelRef.current = channel;
+
+    // Connection state handlers
+    pusher.connection.bind('connected', () => {
+      console.log('[PUSHER] Connected');
+      setIsConnected(true);
+    });
+
+    pusher.connection.bind('disconnected', () => {
+      console.log('[PUSHER] Disconnected');
+      setIsConnected(false);
+    });
+
+    pusher.connection.bind('error', (error: any) => {
+      console.error('[PUSHER] Connection error:', error);
+      setIsConnected(false);
+    });
 
     // Player selection event
     const handlePlayerSelected = (data: PlayerSelectedSocketEvent) => {
       if (process.env.NODE_ENV === 'development') {
-        console.log("[CLIENT] Player selected:", data.selection.user.name);
+        console.log("[PUSHER] Player selected:", data.selection.user.name);
       }
       refreshAuctionState();
 
@@ -155,10 +177,10 @@ export function useAuctionRealtime({
           id: data.selection.id,
           roundId: data.roundId,
           userId: data.selection.user.id,
-          playerId: data.selection.player.id, // Use player.id from the nested player object
+          playerId: data.selection.player.id,
           isWinner: false,
           createdAt: new Date(),
-          player: data.selection.player, // This might be null for privacy
+          player: data.selection.player,
           user: {
             id: data.selection.user.id,
             name: data.selection.user.name,
@@ -166,7 +188,7 @@ export function useAuctionRealtime({
           },
         },
         userId: data.selection.user.id,
-        playerName: data.selection.player?.name || "Hidden Player", // Handle null player
+        playerName: data.selection.player?.name || "Hidden Player",
         teamName: data.selection.user.name,
       };
 
@@ -175,10 +197,8 @@ export function useAuctionRealtime({
 
     // Admin player selection event
     const handleAdminPlayerSelected = (data: AdminPlayerSocketData) => {
-      console.log("[CLIENT] Admin player selected received:", data);
-      console.log("[CLIENT] Calling refreshAuctionState...");
+      console.log("[PUSHER] Admin player selected received:", data);
       refreshAuctionState();
-      console.log("[CLIENT] Calling onAdminPlayerSelected callback...");
 
       // Convert to AdminPlayerSelectedData format for callback
       const adminPlayerSelectedEvent: AdminPlayerSelectedData = {
@@ -189,18 +209,18 @@ export function useAuctionRealtime({
           id: data.selection.id,
           roundId: data.roundId,
           userId: data.selection.user.id,
-          playerId: data.selection.player.id, // Use player.id from the nested player object
+          playerId: data.selection.player.id,
           isWinner: false,
           createdAt: new Date(),
-          player: data.selection.player, // This might be null for privacy
+          player: data.selection.player,
           user: {
             id: data.selection.user.id,
             name: data.selection.user.name,
-            email: data.selection.user.name, // Fallback since we don't have email
+            email: data.selection.user.name,
           },
         },
         userId: data.selection.user.id,
-        playerName: data.selection.player?.name || "Hidden Player", // Handle null player
+        playerName: data.selection.player?.name || "Hidden Player",
         teamName: data.targetTeam.name,
         isAdminAction: data.isAdminAction,
         adminReason: data.adminReason,
@@ -212,10 +232,8 @@ export function useAuctionRealtime({
 
     // Round ready for resolution
     const handleRoundReadyForResolution = (data: RoundReadyData) => {
-      console.log("Round ready for resolution:", data);
-      // Force immediate refresh
+      console.log("[PUSHER] Round ready for resolution:", data);
       refreshAuctionState();
-      // Also force a second refresh with small delay to ensure state sync
       setTimeout(() => {
         refreshAuctionState();
       }, 50);
@@ -224,10 +242,9 @@ export function useAuctionRealtime({
 
     // Round resolved event
     const handleRoundResolved = (data: RoundResolvedSocketEvent) => {
-      console.log("Round resolved:", data);
+      console.log("[PUSHER] Round resolved:", data);
       refreshAuctionState();
 
-      // Convert to app-level RoundResolvedEvent format if callback exists
       if (onRoundResolved) {
         const roundResolvedEvent: RoundResolvedEvent = {
           leagueId: data.leagueId,
@@ -242,14 +259,14 @@ export function useAuctionRealtime({
 
     // Conflict resolution event
     const handleConflictResolution = (data: ConflictResolutionData) => {
-      console.log("Conflict resolution:", data);
+      console.log("[PUSHER] Conflict resolution:", data);
       refreshAuctionState();
       onConflictResolution?.(data);
     };
 
     // Round continues event
     const handleRoundContinues = (data: RoundContinuesData) => {
-      console.log("Round continues:", data);
+      console.log("[PUSHER] Round continues:", data);
       refreshAuctionState();
       onRoundContinues?.(data);
     };
@@ -268,9 +285,8 @@ export function useAuctionRealtime({
         name: string;
       };
     }) => {
-      console.log("Auction started:", data);
+      console.log("[PUSHER] Auction started:", data);
       refreshAuctionState();
-      // Convert to AuctionStateUpdateEvent format for callback
       const auctionStateEvent: AuctionStateUpdateEvent = {
         leagueId: data.leagueId,
         roundId: data.currentRound?.id,
@@ -283,99 +299,80 @@ export function useAuctionRealtime({
 
     // Next round started event
     const handleNextRoundStarted = (data: NextRoundStartedEvent) => {
-      console.log("Next round started:", data);
+      console.log("[PUSHER] Next round started:", data);
       refreshAuctionState();
       onNextRoundStarted?.(data);
     };
 
-    // User joined/left events
+    // User events
     const handleUserJoined = (user: { id: string; name: string }) => {
-      console.log("User joined:", user);
+      console.log("[PUSHER] User joined:", user);
       setConnectedUsers((prev) => [...prev.filter((u) => u.id !== user.id), user]);
       onUserJoined?.(user);
     };
 
     const handleUserLeft = (user: { id: string; name: string }) => {
-      console.log("User left:", user);
+      console.log("[PUSHER] User left:", user);
       setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
       onUserLeft?.(user);
     };
 
     const handleUserDisconnected = (user: { id: string; name: string; reason: string }) => {
-      console.log("User disconnected:", user, "Reason:", user.reason);
+      console.log("[PUSHER] User disconnected:", user, "Reason:", user.reason);
       setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
       onUserDisconnected?.(user);
     };
 
     const handleUserTimeout = (user: { id: string; name: string }) => {
-      console.log("User timed out:", user);
+      console.log("[PUSHER] User timed out:", user);
       setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
       onUserTimeout?.(user);
     };
 
     const handleUsersOnline = (users: Array<{ id: string; name: string }>) => {
-      console.log("Users online:", users);
+      console.log("[PUSHER] Users online:", users);
       setConnectedUsers(users);
     };
 
-    // Admin override event - special handling for round-reset
+    // Admin override event
     const handleAdminOverride = (data: AdminOverrideData) => {
-      console.log("Admin override:", data);
+      console.log("[PUSHER] Admin override:", data);
 
-      // For round-reset, we need to refresh state completely since the round might be deleted
       if (data.action === "reset-round") {
-        // Clear current state and refresh
         setAuctionState(null);
-        // Refresh after a small delay to ensure database transaction is complete
         setTimeout(() => {
           refreshAuctionState();
         }, 500);
       } else {
-        // For other actions, just refresh normally
         refreshAuctionState();
       }
 
       onAdminOverride?.(data);
     };
 
-    // Register event listeners using centralized constants
-    on(SOCKET_EVENTS.PLAYER_SELECTED, handlePlayerSelected);
-    on(SOCKET_EVENTS.ADMIN_PLAYER_SELECTED, handleAdminPlayerSelected);
-    on(SOCKET_EVENTS.ROUND_READY_FOR_RESOLUTION, handleRoundReadyForResolution);
-    on(SOCKET_EVENTS.ROUND_RESOLVED, handleRoundResolved);
-    on(SOCKET_EVENTS.CONFLICT_RESOLUTION, handleConflictResolution);
-    on(SOCKET_EVENTS.ROUND_CONTINUES, handleRoundContinues);
-    on("auction-started", handleAuctionStarted);
-    on(SOCKET_EVENTS.NEXT_ROUND_STARTED, handleNextRoundStarted);
-    on(SOCKET_EVENTS.ADMIN_OVERRIDE, handleAdminOverride);
-    on("user-joined", handleUserJoined);
-    on(SOCKET_EVENTS.USER_LEFT, handleUserLeft);
-    on(SOCKET_EVENTS.USER_DISCONNECTED, handleUserDisconnected);
-    on(SOCKET_EVENTS.USER_TIMEOUT, handleUserTimeout);
-    on(SOCKET_EVENTS.USERS_ONLINE, handleUsersOnline);
+    // Bind event listeners
+    channel.bind(PUSHER_EVENTS.PLAYER_SELECTED, handlePlayerSelected);
+    channel.bind(PUSHER_EVENTS.ADMIN_PLAYER_SELECTED, handleAdminPlayerSelected);
+    channel.bind(PUSHER_EVENTS.ROUND_READY_FOR_RESOLUTION, handleRoundReadyForResolution);
+    channel.bind(PUSHER_EVENTS.ROUND_RESOLVED, handleRoundResolved);
+    channel.bind(PUSHER_EVENTS.CONFLICT_RESOLUTION, handleConflictResolution);
+    channel.bind(PUSHER_EVENTS.ROUND_CONTINUES, handleRoundContinues);
+    channel.bind("auction-started", handleAuctionStarted);
+    channel.bind(PUSHER_EVENTS.NEXT_ROUND_STARTED, handleNextRoundStarted);
+    channel.bind(PUSHER_EVENTS.ADMIN_OVERRIDE, handleAdminOverride);
+    channel.bind("user-joined", handleUserJoined);
+    channel.bind(PUSHER_EVENTS.USER_LEFT, handleUserLeft);
+    channel.bind(PUSHER_EVENTS.USER_DISCONNECTED, handleUserDisconnected);
+    channel.bind(PUSHER_EVENTS.USER_TIMEOUT, handleUserTimeout);
+    channel.bind(PUSHER_EVENTS.USERS_ONLINE, handleUsersOnline);
 
-    // Cleanup event listeners on unmount
+    // Cleanup function
     return () => {
-      off(SOCKET_EVENTS.PLAYER_SELECTED, handlePlayerSelected);
-      off(SOCKET_EVENTS.ADMIN_PLAYER_SELECTED, handleAdminPlayerSelected);
-      off(SOCKET_EVENTS.ROUND_READY_FOR_RESOLUTION, handleRoundReadyForResolution);
-      off(SOCKET_EVENTS.ROUND_RESOLVED, handleRoundResolved);
-      off(SOCKET_EVENTS.CONFLICT_RESOLUTION, handleConflictResolution);
-      off(SOCKET_EVENTS.ROUND_CONTINUES, handleRoundContinues);
-      off("auction-started", handleAuctionStarted);
-      off(SOCKET_EVENTS.NEXT_ROUND_STARTED, handleNextRoundStarted);
-      off(SOCKET_EVENTS.ADMIN_OVERRIDE, handleAdminOverride);
-      off("user-joined", handleUserJoined);
-      off(SOCKET_EVENTS.USER_LEFT, handleUserLeft);
-      off(SOCKET_EVENTS.USER_DISCONNECTED, handleUserDisconnected);
-      off(SOCKET_EVENTS.USER_TIMEOUT, handleUserTimeout);
-      off(SOCKET_EVENTS.USERS_ONLINE, handleUsersOnline);
+      channel.unbind_all();
+      pusher.unsubscribe(channelName);
     };
   }, [
-    socket,
-    isConnected,
-    on,
-    off,
+    leagueId,
     refreshAuctionState,
     onPlayerSelected,
     onAdminPlayerSelected,
@@ -392,47 +389,45 @@ export function useAuctionRealtime({
     onUserTimeout,
   ]);
 
-  // Initialize state if not provided - only once
+  // Initialize state if not provided
   useEffect(() => {
     if (!initialState && leagueId && !auctionState) {
       refreshAuctionState();
     }
-  }, [leagueId, auctionState, initialState, refreshAuctionState]); // Only depend on leagueId and run once per league
+  }, [leagueId, auctionState, initialState, refreshAuctionState]);
 
-  // Heartbeat and periodic sync when Socket.io is disconnected
+  // Fallback polling when Pusher is disconnected
   useEffect(() => {
     if (!leagueId) return;
 
     let heartbeatInterval: NodeJS.Timeout;
 
     if (!isConnected) {
-      // Fallback polling when Socket.io is disconnected
-      console.log("Socket.io disconnected, falling back to polling");
+      console.log("[PUSHER] Disconnected, falling back to polling");
       heartbeatInterval = setInterval(() => {
         refreshAuctionState();
       }, 5000); // Poll every 5 seconds when disconnected
     }
-    // Remove the else block - when connected, rely only on Socket.io events
 
     return () => {
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
       }
     };
-  }, [isConnected, leagueId, refreshAuctionState]); // Remove refreshAuctionState and isSyncing dependencies
+  }, [isConnected, leagueId, refreshAuctionState]);
 
   // Sync when coming back online (page visibility change)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isConnected) {
-        console.log("Page became visible, syncing auction state");
+        console.log("[PUSHER] Page became visible, syncing auction state");
         refreshAuctionState();
       }
     };
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [isConnected, refreshAuctionState]); // Remove refreshAuctionState and isSyncing dependencies
+  }, [isConnected, refreshAuctionState]);
 
   return {
     auctionState,
@@ -441,6 +436,6 @@ export function useAuctionRealtime({
     isConnected,
     isSyncing,
     refreshAuctionState,
-    socket,
+    pusher: pusherRef.current,
   };
 }

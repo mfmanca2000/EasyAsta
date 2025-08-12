@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { createBotUsers, removeBotUsers } from '@/lib/bot-logic'
-import { emitToLeaguesRoom } from '@/lib/socket-utils'
+import pusher, { triggerLeaguesEvent } from '@/lib/pusher'
 
 // GET - Ottieni configurazione bot per lega
 export async function GET(request: NextRequest) {
@@ -203,30 +203,32 @@ export async function POST(request: NextRequest) {
           }
         })
 
-        // Emit bot-joined events for each bot when enabling bot configuration
-        botTeams.forEach(botTeam => {
-          emitToLeaguesRoom('team-joined', {
-            leagueId: leagueId,
-            teamName: botTeam.name,
-            userName: botTeam.user.name || 'Bot AI',
-            teamCount: updatedLeague._count.teams
-          })
-        })
+        // Emit Pusher events for each bot when enabling bot configuration
+        if (botTeams && botTeams.length > 0) {
+          botTeams.forEach(async (botTeam) => {
+            await triggerLeaguesEvent('TEAM_JOINED', {
+              leagueId: leagueId,
+              teamName: botTeam.name,
+              userName: botTeam.user.name || 'Bot AI',
+              teamCount: updatedLeague._count.teams
+            });
+          });
+        }
+        
+        // Always emit a general league update event for any configuration change
+        await triggerLeaguesEvent('LEAGUE_UPDATED', {
+          leagueId: leagueId,
+          teamCount: updatedLeague._count.teams
+        });
+        
+        // Emit specific bot configuration update event
+        await triggerLeaguesEvent('BOT_CONFIG_UPDATED', {
+          leagueId: leagueId,
+          isEnabled: isEnabled,
+          botCount: finalBotCount,
+          intelligence: intelligence
+        });
       }
-      
-      // Always emit a general league update event for any configuration change
-      emitToLeaguesRoom('league-updated', {
-        leagueId: leagueId,
-        teamCount: updatedLeague._count.teams
-      })
-      
-      // Emit specific bot configuration update event
-      emitToLeaguesRoom('bot-config-updated', {
-        leagueId: leagueId,
-        isEnabled: isEnabled,
-        botCount: finalBotCount,
-        intelligence: intelligence
-      })
     }
 
     return NextResponse.json({
@@ -315,20 +317,20 @@ export async function DELETE(request: NextRequest) {
       }
     })
 
-    // Emit Socket.io events to notify users about bot removal
+    // Emit Pusher events to notify users about bot removal
     if (updatedLeague) {
-      emitToLeaguesRoom('league-updated', {
+      await triggerLeaguesEvent('LEAGUE_UPDATED', {
         leagueId: leagueId,
         teamCount: updatedLeague._count.teams
-      })
+      });
       
       // Emit specific bot configuration update event
-      emitToLeaguesRoom('bot-config-updated', {
+      await triggerLeaguesEvent('BOT_CONFIG_UPDATED', {
         leagueId: leagueId,
         isEnabled: false,
         botCount: 0,
         intelligence: 'MEDIUM' // Default since bots are disabled
-      })
+      });
     }
 
     return NextResponse.json({

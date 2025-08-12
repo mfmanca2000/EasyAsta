@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useTranslations, useLocale } from "next-intl";
-import { useSimpleSocket } from "@/hooks/useSimpleSocket";
+import { useLeaguesListener } from "@/hooks/useLeaguesListener";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,7 @@ export default function LeaguesPage() {
   const { data: session, status } = useSession();
   const t = useTranslations();
   const locale = useLocale();
-  const { socket } = useSimpleSocket();
+
   const [leagues, setLeagues] = useState<League[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -131,49 +131,25 @@ export default function LeaguesPage() {
     [debouncedFetchLeagues]
   );
 
-  const handleLeagueCreated = useCallback(
-    () => {
-      // Refresh leagues to include the new league instead of trying to construct it
-      debouncedFetchLeagues();
-    },
-    [debouncedFetchLeagues]
-  );
+  const handleLeagueCreated = useCallback(() => {
+    // Refresh leagues to include the new league instead of trying to construct it
+    debouncedFetchLeagues();
+  }, [debouncedFetchLeagues]);
 
-  const handleBotConfigUpdated = useCallback(
-    () => {
-      // For bot config changes, fetch immediately since these are less frequent and important
-      fetchLeagues();
-    },
-    [fetchLeagues]
-  );
+  const handleBotConfigUpdated = useCallback(() => {
+    // For bot config changes, fetch immediately since these are less frequent and important
+    fetchLeagues();
+  }, [fetchLeagues]);
 
-  // Socket.io listeners for real-time updates
-  useEffect(() => {
-    if (!socket) return;
+  useLeaguesListener({
+    enabled: status === "authenticated",
+    onLeagueCreated: handleLeagueCreated,
+    onTeamJoined: handleTeamJoined,
+    onLeagueUpdated: handleLeagueUpdated,
+    onBotConfigUpdated: handleBotConfigUpdated,
+  });
 
-    // Join the leagues room to receive updates
-    socket.emit("join-leagues");
-
-    socket.on("team-joined", handleTeamJoined);
-    socket.on("league-updated", handleLeagueUpdated);
-    socket.on("league-created", handleLeagueCreated);
-    socket.on("bot-config-updated", handleBotConfigUpdated);
-
-    // Add connection status listeners
-    socket.on("connect", () => {
-      socket.emit("join-leagues");
-    });
-
-    return () => {
-      socket.emit("leave-leagues");
-      socket.off("team-joined", handleTeamJoined);
-      socket.off("league-updated", handleLeagueUpdated);
-      socket.off("league-created", handleLeagueCreated);
-      socket.off("bot-config-updated", handleBotConfigUpdated);
-      socket.off("connect");
-      socket.off("disconnect");
-    };
-  }, [socket, handleTeamJoined, handleLeagueUpdated, handleLeagueCreated, handleBotConfigUpdated]);
+  // Real-time updates now handled by useLeaguesListener hook with Pusher
 
   // Clean up timeout on unmount
   useEffect(() => {
@@ -441,9 +417,7 @@ export default function LeaguesPage() {
                   )}
                 </div>
 
-                <div className="mt-3 text-xs text-muted-foreground">
-                  {t("leagues.joinCode")}:
-                </div>
+                <div className="mt-3 text-xs text-muted-foreground">{t("leagues.joinCode")}:</div>
                 <CopyableCode text={league.joinCode} className="text-xs mt-1" iconSize={12} />
               </CardContent>
             </Card>
