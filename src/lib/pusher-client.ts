@@ -1,7 +1,6 @@
-import Pusher from "pusher-js";
-
 // Client-side Pusher configuration
-let pusherInstance: Pusher | null = null;
+// Pusher will be lazily imported only in browser context via require()
+let pusherInstance: any = null;
 
 // Connection status tracking
 export interface PusherConnectionStatus {
@@ -57,10 +56,28 @@ const isQuotaLimitError = (error: any): boolean => {
   );
 };
 
-export const getPusherInstance = (): Pusher => {
+export const getPusherInstance = (): any => {
+  // Guard against server-side execution
+  if (typeof window === 'undefined') {
+    console.warn('[PUSHER] Attempted to get Pusher instance on server side');
+    return null;
+  }
+
   if (!pusherInstance) {
-    pusherInstance = new Pusher(process.env.NEXT_PUBLIC_PUSHER_APP_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+    const appKey = process.env.NEXT_PUBLIC_PUSHER_APP_KEY;
+    const cluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER;
+
+    if (!appKey || !cluster) {
+      console.error('[PUSHER] Missing required environment variables');
+      return null;
+    }
+
+    // Lazy load Pusher only when needed - this prevents server-side bundling
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const Pusher = require('pusher-js').default;
+
+    pusherInstance = new Pusher(appKey, {
+      cluster,
       enabledTransports: ['ws', 'wss'],
       // Add retry configuration
       activityTimeout: 30000,

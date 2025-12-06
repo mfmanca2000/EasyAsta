@@ -17,7 +17,7 @@ describe('excel-parser', () => {
   });
 
   describe('parseExcelFile', () => {
-    it('should parse valid Excel data correctly', () => {
+    it('should parse valid Excel data correctly', async () => {
       const mockSheetData = [
         // Headers and empty rows (0-4)
         [],
@@ -42,7 +42,7 @@ describe('excel-parser', () => {
       mockedXLSX.utils.sheet_to_json.mockReturnValue(mockSheetData);
 
       const buffer = new ArrayBuffer(0);
-      const result = parseExcelFile(buffer);
+      const result = await parseExcelFile(buffer);
 
       expect(result.success).toBe(true);
       expect(result.errors).toHaveLength(0);
@@ -56,7 +56,7 @@ describe('excel-parser', () => {
       });
     });
 
-    it('should skip players marked as "fuori lista"', () => {
+    it('should skip players marked as "fuori lista"', async () => {
       const mockSheetData = [
         // Headers
         [], [], [], [],
@@ -72,14 +72,14 @@ describe('excel-parser', () => {
       } as any);
       mockedXLSX.utils.sheet_to_json.mockReturnValue(mockSheetData);
 
-      const result = parseExcelFile(new ArrayBuffer(0));
+      const result = await parseExcelFile(new ArrayBuffer(0));
 
       expect(result.success).toBe(true);
       expect(result.players).toHaveLength(1);
       expect(result.players[0].name).toBe('PLAYER2');
     });
 
-    it('should skip players with position "M"', () => {
+    it('should skip players with position "M"', async () => {
       const mockSheetData = [
         [], [], [], [],
         ['ID', 'Giocatore', 'Squadra', 'Ruolo', 'Ruolo Mod. Av.', 'Fuori lista', 'Quotazione'],
@@ -93,14 +93,14 @@ describe('excel-parser', () => {
       } as any);
       mockedXLSX.utils.sheet_to_json.mockReturnValue(mockSheetData);
 
-      const result = parseExcelFile(new ArrayBuffer(0));
+      const result = await parseExcelFile(new ArrayBuffer(0));
 
       expect(result.success).toBe(true);
       expect(result.players).toHaveLength(1);
       expect(result.players[0].position).toBe('D');
     });
 
-    it('should handle validation errors', () => {
+    it('should handle validation errors', async () => {
       const mockSheetData = [
         [], [], [], [],
         ['ID', 'Giocatore', 'Squadra', 'Ruolo', 'Ruolo Mod. Av.', 'Fuori lista', 'Quotazione'],
@@ -116,7 +116,7 @@ describe('excel-parser', () => {
       } as any);
       mockedXLSX.utils.sheet_to_json.mockReturnValue(mockSheetData);
 
-      const result = parseExcelFile(new ArrayBuffer(0));
+      const result = await parseExcelFile(new ArrayBuffer(0));
 
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(3); // Only 3 errors: missing team, invalid position, invalid price
@@ -128,12 +128,12 @@ describe('excel-parser', () => {
       ]);
     });
 
-    it('should handle Excel reading errors', () => {
+    it('should handle Excel reading errors', async () => {
       mockedXLSX.read.mockImplementation(() => {
         throw new Error('Cannot read Excel file');
       });
 
-      const result = parseExcelFile(new ArrayBuffer(0));
+      const result = await parseExcelFile(new ArrayBuffer(0));
 
       expect(result.success).toBe(false);
       expect(result.errors).toHaveLength(1);
@@ -141,7 +141,7 @@ describe('excel-parser', () => {
       expect(result.players).toHaveLength(0);
     });
 
-    it('should normalize player data correctly', () => {
+    it('should normalize player data correctly', async () => {
       const mockSheetData = [
         [], [], [], [],
         ['ID', 'Giocatore', 'Squadra', 'Ruolo', 'Ruolo Mod. Av.', 'Fuori lista', 'Quotazione'],
@@ -154,7 +154,7 @@ describe('excel-parser', () => {
       } as any);
       mockedXLSX.utils.sheet_to_json.mockReturnValue(mockSheetData);
 
-      const result = parseExcelFile(new ArrayBuffer(0));
+      const result = await parseExcelFile(new ArrayBuffer(0));
 
       expect(result.success).toBe(true);
       expect(result.players[0]).toEqual({

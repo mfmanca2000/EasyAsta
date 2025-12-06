@@ -1,5 +1,3 @@
-import * as XLSX from "xlsx";
-
 export interface PlayerData {
   externalId?: string | null;
   name: string;
@@ -14,8 +12,11 @@ export interface ParseResult {
   errors: string[];
 }
 
-export function parseExcelFile(buffer: ArrayBuffer): ParseResult {
+export async function parseExcelFile(buffer: ArrayBuffer): Promise<ParseResult> {
   try {
+    // Dynamic import to avoid loading xlsx during build/prerender
+    const XLSX = await import("xlsx");
+
     const workbook = XLSX.read(buffer, { type: "array" });
     const sheetName = workbook.SheetNames[0];
     const worksheet = workbook.Sheets[sheetName];

@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
 
     // Leggi il file Excel
     const buffer = await file.arrayBuffer();
-    const parseResult = parseExcelFile(buffer);
+    const parseResult = await parseExcelFile(buffer);
 
     if (!parseResult.success) {
       return NextResponse.json(
