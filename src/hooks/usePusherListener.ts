@@ -29,6 +29,11 @@ export function usePusherListener({
     if (!leagueId || !enabled) return;
 
     const pusher = pusherRef.current;
+    if (!pusher) {
+      console.warn('[PUSHER] Pusher instance not available');
+      return;
+    }
+
     const channelName = getAuctionChannel(leagueId);
     const channel = pusher.subscribe(channelName);
     channelRef.current = channel;

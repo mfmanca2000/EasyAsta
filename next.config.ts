@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
   },
 
   // Ensure server-only modules don't cause issues
-  serverExternalPackages: ['xlsx'],
+  serverExternalPackages: ['xlsx', 'pusher'],
 };
 
 export default withNextIntl(nextConfig);

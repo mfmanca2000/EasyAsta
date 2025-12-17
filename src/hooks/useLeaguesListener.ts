@@ -25,6 +25,11 @@ export function useLeaguesListener({
     if (!enabled) return;
 
     const pusher = pusherRef.current;
+    if (!pusher) {
+      console.warn('[PUSHER] Pusher instance not available');
+      return;
+    }
+
     const channelName = getLeaguesChannel();
     const channel = pusher.subscribe(channelName);
     channelRef.current = channel;
