@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Channel } from "pusher-js";
 import { getPusherInstance } from "@/lib/pusher-client";
-import { getLeaguesChannel, PUSHER_EVENTS } from "@/lib/pusher";
+import { getLeaguesChannel, PUSHER_EVENTS } from "@/lib/pusher-shared";
 
 interface UseLeaguesListenerProps {
   enabled?: boolean;

@@ -7,7 +7,7 @@ import {
   getConnectionStatus,
   type PusherConnectionStatus 
 } from "@/lib/pusher-client";
-import { getAuctionChannel, PUSHER_EVENTS } from "@/lib/pusher";
+import { getAuctionChannel, PUSHER_EVENTS } from "@/lib/pusher-shared";
 import { usePollingFallback } from "./usePollingFallback";
 import {
   AuctionRound,
