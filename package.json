@@ -4,14 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:ci": "jest --ci --coverage --watchAll=false",
-    "postinstall": "prisma generate"
+    "test:ci": "jest --ci --coverage --watchAll=false"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
