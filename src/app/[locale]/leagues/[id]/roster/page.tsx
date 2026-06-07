@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLeague } from "@/hooks/useLeague";
 import { usePusherListener } from "@/hooks/usePusherListener";
@@ -21,8 +21,10 @@ import { toast } from "sonner";
 export default function RosterPage() {
   const { data: session, status } = useSession();
   const params = useParams();
+  const searchParams = useSearchParams();
   const leagueId = params.id as string;
   const locale = params.locale as string;
+  const initialTeamId = searchParams.get("teamId");
   const t = useTranslations();
   const { league, userTeam, loading, fetchLeague } = useLeague(leagueId);
   usePusherListener({
@@ -48,16 +50,19 @@ export default function RosterPage() {
     }
   }, [status, leagueId, fetchLeague, locale]);
 
-  // Imposta la squadra dell'utente corrente come default quando la lega è caricata
+  // Imposta la squadra iniziale: priorità a teamId da query param, poi squadra utente, poi prima
   useEffect(() => {
     if (league && !selectedTeam) {
-      if (userTeam) {
+      const fromQuery = initialTeamId ? league.teams.find((t) => t.id === initialTeamId) : null;
+      if (fromQuery) {
+        setSelectedTeam(fromQuery);
+      } else if (userTeam) {
         setSelectedTeam(userTeam);
       } else if (league.teams.length > 0) {
         setSelectedTeam(league.teams[0]);
       }
     }
-  }, [league, userTeam, selectedTeam]);
+  }, [league, userTeam, selectedTeam, initialTeamId]);
 
   // Aggiorna la squadra selezionata quando la lega cambia (dopo delete)
   useEffect(() => {

@@ -231,7 +231,7 @@ export default function LeagueDetailPage() {
                 </div>
 
                 <div className="mt-4">
-                  <Link href={`/leagues/${league.id}/roster`}>
+                  <Link href={`/leagues/${league.id}/roster?teamId=${team.id}`}>
                     <Button size="sm" variant="outline" className="w-full">
                       <Trophy className="mr-2 h-3 w-3" />
                       {t("leagues.details.viewRoster")}
