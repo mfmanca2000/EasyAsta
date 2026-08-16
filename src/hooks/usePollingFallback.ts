@@ -62,10 +62,42 @@ export function usePollingFallback({
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Il chiamante (page.tsx) passa le callback come funzioni inline, quindi
+  // cambiano identita' ad ogni render. Tenerle in un ref evita che quel
+  // cambiamento si propaghi a useCallback/useEffect a valle: senza questo,
+  // ogni render ricreava pollAuctionState, che ricreava l'effetto di
+  // avvio/stop del polling, che rieseguiva subito un fetch -> nuovo render
+  // -> loop che chiamava l'API decine di volte al secondo invece che ogni 2s.
+  const callbacksRef = useRef({
+    onPlayerSelected,
+    onAdminPlayerSelected,
+    onRoundResolved,
+    onAuctionStarted,
+    onNextRoundStarted,
+    onRoundReadyForResolution,
+  });
+  callbacksRef.current = {
+    onPlayerSelected,
+    onAdminPlayerSelected,
+    onRoundResolved,
+    onAuctionStarted,
+    onNextRoundStarted,
+    onRoundReadyForResolution,
+  };
+
+  // isSyncing/lastUpdated in un ref: usati per la guardia "richiesta gia' in
+  // corso" e per l'header condizionale senza rientrare nelle dipendenze di
+  // fetchAuctionState/pollAuctionState (altrimenti la loro identita' cambia
+  // ad ogni poll, riproducendo lo stesso loop descritto sopra).
+  const isSyncingRef = useRef(false);
+  const lastUpdatedRef = useRef<Date>(lastUpdated);
+
   // Detect changes and trigger appropriate callbacks
   const detectAndTriggerChanges = useCallback(
     (newState: AuctionState | null, prevState: AuctionState | null) => {
       if (!newState || !prevState) return;
+
+      const { onPlayerSelected, onAdminPlayerSelected, onRoundResolved, onAuctionStarted, onNextRoundStarted, onRoundReadyForResolution } = callbacksRef.current;
 
       const newRound = newState.currentRound;
       const prevRound = prevState.currentRound;
@@ -173,12 +205,15 @@ export function usePollingFallback({
       // Check for league status changes (auction completion)
       // This would be detected through the API response structure
     },
-    [leagueId, onPlayerSelected, onAdminPlayerSelected, onRoundResolved, onAuctionStarted, onNextRoundStarted, onRoundReadyForResolution]
+    [leagueId]
   );
 
   // Fetch auction state
   const fetchAuctionState = useCallback(async (): Promise<AuctionState | null> => {
-    if (!leagueId || isSyncing) return null;
+    // Nota: la guardia "e' gia' in corso una richiesta" vive solo in pollAuctionState
+    // (l'unico chiamante), che imposta isSyncingRef.current PRIMA di invocare questa
+    // funzione: ripeterla qui farebbe fallire ogni chiamata perche' il ref e' gia' true.
+    if (!leagueId) return null;
 
     try {
       // Cancel previous request if still pending
@@ -193,7 +228,7 @@ export function usePollingFallback({
         signal: controller.signal,
         headers: {
           "Cache-Control": "no-cache",
-          "If-Modified-Since": lastUpdated.toUTCString(), // Conditional request
+          "If-Modified-Since": lastUpdatedRef.current.toUTCString(), // Conditional request
         },
       });
 
@@ -214,12 +249,13 @@ export function usePollingFallback({
       }
       return null;
     }
-  }, [leagueId, isSyncing, lastUpdated]);
+  }, [leagueId]);
 
   // Poll auction state
   const pollAuctionState = useCallback(async () => {
-    if (!enabled || isSyncing) return;
+    if (!enabled || isSyncingRef.current) return;
 
+    isSyncingRef.current = true;
     setIsSyncing(true);
 
     try {
@@ -233,15 +269,23 @@ export function usePollingFallback({
 
         // Update state
         setAuctionState(newState);
-        setLastUpdated(new Date());
+        lastUpdatedRef.current = new Date();
+        setLastUpdated(lastUpdatedRef.current);
         prevStateRef.current = newState;
       }
     } catch (error) {
       console.error("[POLLING] Error during polling:", error);
     } finally {
+      isSyncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [enabled, isSyncing, fetchAuctionState, detectAndTriggerChanges]);
+  }, [enabled, fetchAuctionState, detectAndTriggerChanges]);
+
+  // Riferimento sempre aggiornato alla poll corrente, cosi' l'effetto di
+  // avvio/stop sotto puo' dipendere solo da [enabled, leagueId] e non deve
+  // essere ricreato (e quindi rieseguito) ad ogni render.
+  const pollRef = useRef(pollAuctionState);
+  pollRef.current = pollAuctionState;
 
   // Start/stop polling based on enabled state
   useEffect(() => {
@@ -252,11 +296,11 @@ export function usePollingFallback({
       setIsPolling(true);
 
       // Initial fetch
-      pollAuctionState();
+      pollRef.current();
 
       // Set up polling interval
       pollIntervalRef.current = setInterval(() => {
-        pollAuctionState();
+        pollRef.current();
       }, 2000); // Poll every 2 seconds for real-time feel
     } else {
       console.log("[POLLING] Stopping fallback polling mode");
@@ -285,14 +329,14 @@ export function usePollingFallback({
         abortControllerRef.current = null;
       }
     };
-  }, [enabled, leagueId, pollAuctionState]);
+  }, [enabled, leagueId]);
 
   // Initialize state if not provided
   useEffect(() => {
     if (!initialState && leagueId && !auctionState && enabled) {
-      pollAuctionState();
+      pollRef.current();
     }
-  }, [leagueId, auctionState, initialState, enabled, pollAuctionState]);
+  }, [leagueId, auctionState, initialState, enabled]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -309,11 +353,11 @@ export function usePollingFallback({
   // Manual refresh function
   const refreshAuctionState = useCallback(
     async (immediate = false) => {
-      if (immediate || !isSyncing) {
+      if (immediate || !isSyncingRef.current) {
         await pollAuctionState();
       }
     },
-    [pollAuctionState, isSyncing]
+    [pollAuctionState]
   );
 
   return {

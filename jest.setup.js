@@ -37,16 +37,23 @@ jest.mock('next-intl', () => ({
   useLocale: jest.fn(() => 'en'),
 }))
 
-// Mock Socket.io client
-jest.mock('socket.io-client', () => ({
-  io: jest.fn(() => ({
-    on: jest.fn(),
-    off: jest.fn(),
-    emit: jest.fn(),
+// Mock Pusher (client-side real-time, replaced Socket.io in the Pusher migration)
+jest.mock('pusher-js', () => {
+  return jest.fn().mockImplementation(() => ({
+    subscribe: jest.fn(() => ({
+      bind: jest.fn(),
+      unbind: jest.fn(),
+      unbind_all: jest.fn(),
+    })),
+    unsubscribe: jest.fn(),
+    connection: {
+      bind: jest.fn(),
+      unbind: jest.fn(),
+    },
     disconnect: jest.fn(),
-    connected: false,
-  })),
-}))
+    connect: jest.fn(),
+  }))
+})
 
 // Mock Prisma client
 jest.mock('@/lib/prisma', () => ({
