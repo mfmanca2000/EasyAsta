@@ -112,26 +112,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "LeagueId richiesto", success: false } as ApiResponse, { status: 400 });
     }
 
-    // Verifica accesso alla lega e se è admin
-    const userTeam = await prisma.team.findFirst({
-      where: {
-        leagueId,
-        user: {
-          email: session.user.email,
+    // Verifica accesso alla lega e se è admin.
+    // Una sola query per squadra utente + ruolo admin: questo endpoint viene
+    // interrogato in polling, quindi ogni query risparmiata riduce il carico
+    // sul pool di connessioni.
+    const league = await prisma.league.findUnique({
+      where: { id: leagueId },
+      select: {
+        id: true,
+        admin: { select: { email: true } },
+        teams: {
+          where: { user: { email: session.user.email } },
+          select: { id: true, userId: true },
+          take: 1,
         },
       },
     });
 
-    const league = await prisma.league.findFirst({
-      where: {
-        id: leagueId,
-        admin: {
-          email: session.user.email,
-        },
-      },
-    });
-
-    const isAdmin = !!league;
+    const userTeam = league?.teams[0];
+    const isAdmin = league?.admin?.email === session.user.email;
 
     if (!userTeam && !isAdmin) {
       return NextResponse.json({ error: "Accesso negato alla lega", success: false } as ApiResponse, { status: 403 });

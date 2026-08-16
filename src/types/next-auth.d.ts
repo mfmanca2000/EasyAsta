@@ -9,3 +9,12 @@ declare module "next-auth" {
     } & DefaultSession["user"]
   }
 }
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    uid?: string
+    role?: UserRole
+    /** Timestamp (ms) dell'ultima rilettura del ruolo dal database */
+    roleUpdatedAt?: number
+  }
+}
