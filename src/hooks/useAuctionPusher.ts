@@ -145,6 +145,16 @@ export function useAuctionPusher({
   // ricrea l'effetto di sottoscrizione Pusher che la usa (vedi sotto).
   const isSyncingRef = useRef(false);
 
+  // Rete di sicurezza: se la connessione Pusher oscilla rapidamente tra connesso
+  // e fallback (osservato in produzione: centinaia di chiamate a /api/auction in
+  // meno di un secondo, senza alcuna azione utente), l'effetto "Initialize state"
+  // qui sotto e quello analogo in usePollingFallback rieseguono un fetch immediato
+  // ad ogni transizione di connectionStatus.fallbackMode. Un limite duro sul
+  // ritmo reale delle richieste tiene sotto controllo il caso peggiore
+  // indipendentemente dalla frequenza con cui gli effetti a monte si rieseguono.
+  const lastFetchAtRef = useRef(0);
+  const MIN_FETCH_INTERVAL_MS = 1000;
+
   const refreshAuctionState = useCallback(async (immediate = false) => {
     if (isSyncingRef.current || !leagueId) return;
 
@@ -164,6 +174,10 @@ export function useAuctionPusher({
       }, 150); // 150ms debounce
       return;
     }
+
+    const now = Date.now();
+    if (now - lastFetchAtRef.current < MIN_FETCH_INTERVAL_MS) return;
+    lastFetchAtRef.current = now;
 
     try {
       isSyncingRef.current = true;

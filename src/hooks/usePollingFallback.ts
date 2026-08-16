@@ -92,6 +92,16 @@ export function usePollingFallback({
   const isSyncingRef = useRef(false);
   const lastUpdatedRef = useRef<Date>(lastUpdated);
 
+  // Rete di sicurezza: se la connessione Pusher oscilla rapidamente tra connesso
+  // e fallback (osservato in produzione: centinaia di chiamate a /api/auction in
+  // meno di un secondo, senza alcuna azione utente), sia questo hook sia
+  // useAuctionPusher rieseguono un fetch immediato ad ogni transizione di
+  // `enabled`/`connectionStatus.fallbackMode`. Un limite duro sul ritmo reale
+  // delle richieste tiene sotto controllo il caso peggiore indipendentemente
+  // dalla frequenza con cui gli effetti a monte si rieseguono.
+  const lastFetchAtRef = useRef(0);
+  const MIN_FETCH_INTERVAL_MS = 1000;
+
   // Detect changes and trigger appropriate callbacks
   const detectAndTriggerChanges = useCallback(
     (newState: AuctionState | null, prevState: AuctionState | null) => {
@@ -254,6 +264,10 @@ export function usePollingFallback({
   // Poll auction state
   const pollAuctionState = useCallback(async () => {
     if (!enabled || isSyncingRef.current) return;
+
+    const now = Date.now();
+    if (now - lastFetchAtRef.current < MIN_FETCH_INTERVAL_MS) return;
+    lastFetchAtRef.current = now;
 
     isSyncingRef.current = true;
     setIsSyncing(true);
