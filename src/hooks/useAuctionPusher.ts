@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState, useRef } from "react";
 import { Channel } from "pusher-js";
-import { 
-  getPusherInstance, 
-  addConnectionListener, 
-  removeConnectionListener, 
+import {
+  getPusherInstance,
+  addConnectionListener,
+  removeConnectionListener,
   getConnectionStatus,
-  type PusherConnectionStatus 
+  type PusherConnectionStatus
 } from "@/lib/pusher-client";
 import { getAuctionChannel, PUSHER_EVENTS } from "@/lib/pusher-shared";
 import { usePollingFallback } from "./usePollingFallback";
@@ -86,6 +86,44 @@ export function useAuctionPusher({
   const pusherRef = useRef(getPusherInstance());
   const channelRef = useRef<Channel | null>(null);
 
+  // Il chiamante (page.tsx) passa queste callback come funzioni inline, quindi
+  // cambiano identita' ad ogni render. Tenerle in un ref evita che quel
+  // cambiamento si propaghi all'effetto di sottoscrizione Pusher qui sotto:
+  // senza questo, ogni render eseguiva unbind_all + unsubscribe + subscribe
+  // sul canale, e se una callback dipendeva da uno stato che refreshAuctionState
+  // stesso aggiornava si otteneva un loop di richieste (lo stesso bug del
+  // fallback polling in usePollingFallback.ts).
+  const callbacksRef = useRef({
+    onPlayerSelected,
+    onAdminPlayerSelected,
+    onRoundResolved,
+    onAuctionStarted,
+    onNextRoundStarted,
+    onRoundReadyForResolution,
+    onConflictResolution,
+    onRoundContinues,
+    onAdminOverride,
+    onUserJoined,
+    onUserLeft,
+    onUserDisconnected,
+    onUserTimeout,
+  });
+  callbacksRef.current = {
+    onPlayerSelected,
+    onAdminPlayerSelected,
+    onRoundResolved,
+    onAuctionStarted,
+    onNextRoundStarted,
+    onRoundReadyForResolution,
+    onConflictResolution,
+    onRoundContinues,
+    onAdminOverride,
+    onUserJoined,
+    onUserLeft,
+    onUserDisconnected,
+    onUserTimeout,
+  };
+
   // Polling fallback hook
   const pollingFallback = usePollingFallback({
     leagueId,
@@ -101,9 +139,14 @@ export function useAuctionPusher({
 
   // Debounced state refresh to prevent excessive API calls
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  // isSyncing letto da un ref: usarlo come dipendenza di useCallback fa
+  // cambiare l'identita' di refreshAuctionState ad ogni richiesta (viene
+  // impostato a true/false dalla funzione stessa), il che a sua volta
+  // ricrea l'effetto di sottoscrizione Pusher che la usa (vedi sotto).
+  const isSyncingRef = useRef(false);
+
   const refreshAuctionState = useCallback(async (immediate = false) => {
-    if (isSyncing || !leagueId) return;
+    if (isSyncingRef.current || !leagueId) return;
 
     // Clear existing timeout if immediate refresh requested
     if (immediate && refreshTimeoutRef.current) {
@@ -114,7 +157,7 @@ export function useAuctionPusher({
     // If not immediate, debounce the refresh
     if (!immediate) {
       if (refreshTimeoutRef.current) return; // Already scheduled
-      
+
       refreshTimeoutRef.current = setTimeout(() => {
         refreshTimeoutRef.current = null;
         refreshAuctionState(true);
@@ -123,8 +166,9 @@ export function useAuctionPusher({
     }
 
     try {
+      isSyncingRef.current = true;
       setIsSyncing(true);
-      
+
       // Use AbortController for request cancellation
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
@@ -135,7 +179,7 @@ export function useAuctionPusher({
           'Cache-Control': 'no-cache'
         }
       });
-      
+
       clearTimeout(timeoutId);
 
       if (response.ok) {
@@ -148,16 +192,17 @@ export function useAuctionPusher({
         console.error("Error refreshing auction state:", error);
       }
     } finally {
+      isSyncingRef.current = false;
       setIsSyncing(false);
     }
-  }, [leagueId, isSyncing]);
+  }, [leagueId]);
 
   // Listen for connection status changes
   useEffect(() => {
     const handleConnectionStatusChange = (status: PusherConnectionStatus) => {
       console.log('[PUSHER] Connection status changed:', status);
       setConnectionStatus(status);
-      
+
       // Show user-friendly notifications about fallback mode
       if (status.fallbackMode && !connectionStatus.fallbackMode) {
         if (status.isLimitReached) {
@@ -171,7 +216,7 @@ export function useAuctionPusher({
     };
 
     addConnectionListener(handleConnectionStatusChange);
-    
+
     return () => {
       removeConnectionListener(handleConnectionStatusChange);
     };
@@ -217,7 +262,7 @@ export function useAuctionPusher({
         teamName: data.selection.user.name,
       };
 
-      onPlayerSelected?.(playerSelectedEvent);
+      callbacksRef.current.onPlayerSelected?.(playerSelectedEvent);
     };
 
     // Admin player selection event
@@ -252,7 +297,7 @@ export function useAuctionPusher({
         targetTeam: data.targetTeam,
       };
 
-      onAdminPlayerSelected?.(adminPlayerSelectedEvent);
+      callbacksRef.current.onAdminPlayerSelected?.(adminPlayerSelectedEvent);
     };
 
     // Round ready for resolution
@@ -262,7 +307,7 @@ export function useAuctionPusher({
       setTimeout(() => {
         refreshAuctionState();
       }, 50);
-      onRoundReadyForResolution?.(data);
+      callbacksRef.current.onRoundReadyForResolution?.(data);
     };
 
     // Round resolved event
@@ -270,7 +315,7 @@ export function useAuctionPusher({
       console.log("[PUSHER] Round resolved:", data);
       refreshAuctionState();
 
-      if (onRoundResolved) {
+      if (callbacksRef.current.onRoundResolved) {
         const roundResolvedEvent: RoundResolvedEvent = {
           leagueId: data.leagueId,
           roundId: data.roundId,
@@ -278,7 +323,7 @@ export function useAuctionPusher({
           assignments: data.assignments || [],
           canContinue: data.canContinue,
         };
-        onRoundResolved(roundResolvedEvent);
+        callbacksRef.current.onRoundResolved(roundResolvedEvent);
       }
     };
 
@@ -286,14 +331,14 @@ export function useAuctionPusher({
     const handleConflictResolution = (data: ConflictResolutionData) => {
       console.log("[PUSHER] Conflict resolution:", data);
       refreshAuctionState();
-      onConflictResolution?.(data);
+      callbacksRef.current.onConflictResolution?.(data);
     };
 
     // Round continues event
     const handleRoundContinues = (data: RoundContinuesData) => {
       console.log("[PUSHER] Round continues:", data);
       refreshAuctionState();
-      onRoundContinues?.(data);
+      callbacksRef.current.onRoundContinues?.(data);
     };
 
     // Auction started event
@@ -319,39 +364,39 @@ export function useAuctionPusher({
         status: "AUCTION",
         currentRound: data.currentRound,
       };
-      onAuctionStarted?.(auctionStateEvent);
+      callbacksRef.current.onAuctionStarted?.(auctionStateEvent);
     };
 
     // Next round started event
     const handleNextRoundStarted = (data: NextRoundStartedEvent) => {
       console.log("[PUSHER] Next round started:", data);
       refreshAuctionState();
-      onNextRoundStarted?.(data);
+      callbacksRef.current.onNextRoundStarted?.(data);
     };
 
     // User events
     const handleUserJoined = (user: { id: string; name: string }) => {
       console.log("[PUSHER] User joined:", user);
       setConnectedUsers((prev) => [...prev.filter((u) => u.id !== user.id), user]);
-      onUserJoined?.(user);
+      callbacksRef.current.onUserJoined?.(user);
     };
 
     const handleUserLeft = (user: { id: string; name: string }) => {
       console.log("[PUSHER] User left:", user);
       setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
-      onUserLeft?.(user);
+      callbacksRef.current.onUserLeft?.(user);
     };
 
     const handleUserDisconnected = (user: { id: string; name: string; reason: string }) => {
       console.log("[PUSHER] User disconnected:", user, "Reason:", user.reason);
       setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
-      onUserDisconnected?.(user);
+      callbacksRef.current.onUserDisconnected?.(user);
     };
 
     const handleUserTimeout = (user: { id: string; name: string }) => {
       console.log("[PUSHER] User timed out:", user);
       setConnectedUsers((prev) => prev.filter((u) => u.id !== user.id));
-      onUserTimeout?.(user);
+      callbacksRef.current.onUserTimeout?.(user);
     };
 
     const handleUsersOnline = (users: Array<{ id: string; name: string }>) => {
@@ -372,7 +417,7 @@ export function useAuctionPusher({
         refreshAuctionState();
       }
 
-      onAdminOverride?.(data);
+      callbacksRef.current.onAdminOverride?.(data);
     };
 
     // Bind event listeners
@@ -396,24 +441,10 @@ export function useAuctionPusher({
       channel.unbind_all();
       pusher.unsubscribe(channelName);
     };
-  }, [
-    leagueId,
-    connectionStatus.fallbackMode,
-    refreshAuctionState,
-    onPlayerSelected,
-    onAdminPlayerSelected,
-    onRoundResolved,
-    onAuctionStarted,
-    onNextRoundStarted,
-    onRoundReadyForResolution,
-    onConflictResolution,
-    onRoundContinues,
-    onAdminOverride,
-    onUserJoined,
-    onUserLeft,
-    onUserDisconnected,
-    onUserTimeout,
-  ]);
+    // Le callback dei chiamanti sono lette da callbacksRef.current, quindi non
+    // vanno elencate qui: la loro (in)stabilita' non deve far ri-sottoscrivere
+    // il canale ad ogni render.
+  }, [leagueId, connectionStatus.fallbackMode, refreshAuctionState]);
 
   // Initialize state if not provided (only for Pusher mode)
   useEffect(() => {
